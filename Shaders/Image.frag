@@ -603,8 +603,6 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
 
 Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 
-
-//    p = opTransf(p-position, rotX(-45*iTime))+position;
     p = opTransf(p, inverse(t));
 
     Surface haste = Surface( cylinderVerticalDist( p-position-vec3(0,1,0),vec2(0.08,1.1)), vec3(0.2), 0.2,0.5,1);
@@ -632,16 +630,16 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 
 }
 
-Surface Spaceship(vec3 p, vec3 position, mat4 t){
-   // position -= vec3(0,0,-5);
-
+Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
+    position -= vec3(0,0,-5*cos(iTime));
+ 
     // View spaceship
+    p = opTransf(p-position, inverse(t))  / s;
 
-    p = opTransf(p-position, inverse(t))+position;
 
-  //  p = opTransf(p-position, rotY(-45*iTime))+position;
+ //   p = opTransf(p-position, rotY(-45*iTime))+position;
 
-    p = opTransf(p-position, rotY(-40))+position;
+ //   p = opTransf(p-position, rotY(-40))+position;
 
     Surface hull = Surface(
         boxDist(p-position, vec3(1.5,1.5,3)),
@@ -655,11 +653,21 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t){
     ));
 
     Surface visor = Surface(
-        pyramidDist(   opTransf((p-position +vec3(0,0,3))/3, rotX(90)), 3)*3,
+        pyramidDist(   opTransf((p-position +vec3(0,0,3))/3, rotX(90)), 2.5)*3,
         vec3(0.3,0.5,1),
         0.2,0.5,0.9
     );
-    Surface trunc = Surface(boxDist(p-position+vec3(0,0,12), vec3(1,1,3)), vec3(0,0.6,0.6), 0.2,0.5,0.9);
+
+     Surface glass = Surface(
+        pyramidDist(   opTransf((p-position +vec3(0,-0.4,4))/2, rotX(90)), 2.5)*2,
+        vec3(0,0.8,1),
+        0.2,0.5,5
+    );
+
+    glass = subtractionS(glass, Surface(boxDist(p-position+vec3(0,0,11), vec3(1,1,3)), vec3(0,0.8,1), 0.2,0.5,5));
+    
+
+    Surface trunc = Surface(boxDist(p-position+vec3(0,0,12), vec3(1,1,3)), vec3(0.3,0.5,1), 0.2,0.5,0.9);
   
     Surface turbineBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0,3),rotX(90)) , vec2(1.2,1.2)), vec3(0.2), 0.2, 0.5, 0.9 );
     Surface turbineFireBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0,4),rotX(90)) , vec2(0.8,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
@@ -671,19 +679,19 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t){
 
 
 
-    Surface turbineLeftSpear = Surface(   roundConeDist2( p-position  -vec3(7,0,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
-    Surface turbineLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(7,0,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineLeftSpear = Surface(   roundConeDist2( p-position  -vec3(6,1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface turbineLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(6,1,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
 
-    Surface turbineFireLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(7,0,1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
-    Surface turbineLeftDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(7,0,0),rotX(90)) , vec2(1.2,0.95)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineFireLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(6,1,1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
+    Surface turbineLeftDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(6,1,0),rotX(90)) , vec2(1.2,0.95)), vec3(0.2), 0.2, 0.5, 0.9 );
 
     Surface wingLeft_frust = Surface(
-        pyramidDist(   opTransf((p-position +vec3(-1.7,0,0))/2, rotZ(90)), 4)*2,
+        pyramidDist(   opTransf((p-position +vec3(-1.65,0,0))/2, rotZ(75)), 4)*2,
         vec3(0.2),
         0.2,0.5,0.9
     );
-    wingLeft_frust = unionS(wingLeft_frust, Surface(boxDist(p-position+vec3(-1.5,0,0), vec3(0.2,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
-    Surface wingLeft_trunc = Surface(boxDist(p-position+vec3(-8,0,0), vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
+    wingLeft_frust = unionS(wingLeft_frust, Surface(boxDist(p-position+vec3(-1.6,0,0), vec3(0.3,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
+    Surface wingLeft_trunc = Surface(boxDist(    opTransf(p-position+vec3(-8,-1,0),rotZ(-15)), vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
     Surface leftWing = subtractionS(wingLeft_frust, wingLeft_trunc);
     turbineLeft = unionS(leftWing, turbineLeft);
     turbineLeft = unionS(turbineLeft, turbineLeftDetail);
@@ -692,18 +700,18 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t){
     turbineLeft = unionS(turbineLeft, turbineLeftSpear);
 
     // RIGHT
-    Surface turbineRightSpear = Surface(   roundConeDist2( p-position +vec3(7,0,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
-    Surface turbineRight = Surface(cylinderVerticalDist(opTransf(p-position + vec3(7,0,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
-    Surface turbineFireRight = Surface( cylinderVerticalDist( opTransf(p-position +vec3(7,0,-1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
-    Surface turbineRightDetail = Surface( cylinderVerticalDist(opTransf(p-position+vec3(7,0,0),rotX(90)) , vec2(1.2,0.95)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineRightSpear = Surface(   roundConeDist2( p-position +vec3(6,-1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface turbineRight = Surface(cylinderVerticalDist(opTransf(p-position + vec3(6,-1,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineFireRight = Surface( cylinderVerticalDist( opTransf(p-position +vec3(6,-1,-1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
+    Surface turbineRightDetail = Surface( cylinderVerticalDist(opTransf(p-position+vec3(6,-1,0),rotX(90)) , vec2(1.2,0.95)), vec3(0.2), 0.2, 0.5, 0.9 );
 
     Surface wingRight_frust = Surface(
-        pyramidDist(   opTransf((p-position +vec3(1.7,0,0))/2, rotZ(-90)), 4)*2,
+        pyramidDist(   opTransf((p-position +vec3(1.65,0,0))/2, rotZ(-75)), 4)*2,
         vec3(0.2),
         0.2,0.5,0.9
     );
-    wingRight_frust = unionS(wingRight_frust, Surface(boxDist(p-position+vec3(1.5,0,0), vec3(0.2,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
-    Surface wingRight_trunc = Surface(boxDist(p-position+vec3(8,0,0), vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
+    wingRight_frust = unionS(wingRight_frust, Surface(boxDist(p-position+vec3(1.6,0,0)  , vec3(0.3,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
+    Surface wingRight_trunc = Surface(boxDist(   opTransf(p-position+vec3(8,-1,0),rotZ(15)) , vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
     Surface RightWing = subtractionS(wingRight_frust, wingRight_trunc);
     turbineRight = unionS(RightWing, turbineRight);
     turbineRight = unionS(turbineRight, turbineRightDetail);
@@ -712,13 +720,19 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t){
     turbineRight = unionS(turbineRight, turbineRightSpear);
 
     visor = subtractionS(visor,trunc);
+    visor = unionS(visor, glass);
     hull = unionS(turbineLeft, hull);
     hull = unionS(turbineRight, hull);
 
-    Surface scope = getScope(p, position, rotX(0), rotY( 0 ));
+    Surface scope = getScope(p, position, rotX(0), scopeRotation);
     hull = unionS(hull, scope);
 
-    return unionS(visor, hull);
+    Surface result = unionS(visor, hull);
+
+    result.d *= s;
+
+    return result;
+    // return unionS(visor, hull);
 
 }
 
@@ -808,8 +822,8 @@ Surface getDist(vec3 p)
   /*  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));*/
   
     vec3 spaceship_position = vec3(-3,0,12);
-    Surface spac = Spaceship(p, spaceship_position, rotX(0));
-    return spac;
+    mat4 scopeRotation = rotY(30);
+    Surface spac = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.5);
 
     d = unionS(d, spac);
     d = unionS(d, sun);
