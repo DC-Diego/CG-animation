@@ -601,6 +601,73 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
     return missile;
 }
 
+Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
+   p = opTransf(p-position, rotY(-45*iTime))+position;
+   // p = opTransf(p-position, rotY(-75))+position;
+
+    // RED: vec3(0.93,0.0,0.19)
+    Surface hull = Surface( cylinderVerticalDist( opTransf(p-position-vec3(0,0.4,-0.8),rotX(90))  , vec2(1.2,1.6)), vec3(0.2), 0.2, 0.8, 1);    
+
+    Surface detail = Surface(  torusDist(p-position-vec3(0,0,-3), vec2(2,0.5)), vec3(0.2),0.5,0.5,100);
+
+    Surface truncator = Surface( sphereDist(p,position+vec3(0,0.6,-5.0), 1.75), vec3(0.2), 0.5,0.5,0  );
+
+
+    Surface visor = Surface(  sphereDist(p,position+vec3(0,0,-2.75), 1.5), vec3(0,0,1), 0.2,1,5  );
+    Surface base = subtractionS(Surface(cylinderVerticalDist(p-position-vec3(0,-0.3,-3), vec2(1.6,0.2)), vec3(0.93, 0,0.19), 0.2,1,1 ), detail);
+    base.color = vec3(0.93, 0,0.19);
+    visor = subtractionS(visor,  Surface(boxDist(p-position-vec3(0,-1.2,-3), vec3(2,1,2)), vec3(0), 1,1,1 )  );
+    detail.Ks = 1;
+    detail = subtractionS(detail, truncator        );
+    visor = unionS(visor, base);
+    Surface cabin = subtractionS(subtractionS(Surface(sphereDist(p,position+vec3(0,0,-2.75), 1.7), vec3(0.15), 0.2, 0.8, 1  ),  Surface(boxDist(p-position-vec3(0,-1.2,-3), vec3(2,1,2)), vec3(0.15), 0.2, 0.8, 1)), Surface(boxDist(p-position-vec3(0,0,-4.5), vec3(2,2,2)), vec3(0.15), 0.2, 0.8, 1));
+    //visor =  unionS(visor, cabin);
+
+    hull = smoothUnionS(hull, cabin, 0.2);
+    hull =  smoothUnionS(hull, detail, 0.5);
+
+    Surface turbineBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0.4,1),rotX(90)) , vec2(0.9,1)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineFireBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0.4,2),rotX(90)) , vec2(0.5,0.5)), vec3(1,0.31,0.09), 1, 0, 10 );
+    Surface turbineBackDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(0,0.4,1),rotX(90)) , vec2(1.1,0.65)),vec3(0.93,0.0,0.19), 0.2, 0.5, 0.9 );
+    
+    Surface turbineLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(2,-1.5,1.5),rotX(90)) , vec2(0.4,1)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineFireLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(2,-1.5,2.5),rotX(90)) , vec2(0.2,0.5)), vec3(1,0.31,0.09), 1, 0, 10 );
+    Surface turbineLeftDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(2,-1.5,1.5),rotX(90)) , vec2(0.5,0.65)),vec3(0.93,0.0,0.19), 0.2, 0.5, 0.9 );
+
+    Surface turbineRight = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(-2,-1.5,1.5),rotX(90)) , vec2(0.4,1)), vec3(0.2), 0.2, 0.5, 0.9 );
+    Surface turbineFireRight = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(-2,-1.5,2.5),rotX(90)) , vec2(0.2,0.5)), vec3(1,0.31,0.09), 1, 0, 10 );
+    Surface turbineRightDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(-2,-1.5,1.5),rotX(90)) , vec2(0.5,0.65)),vec3(0.93,0.0,0.19), 0.2, 0.5, 0.9 );
+
+    Surface rightConnection = Surface(  roundConeDist2(p-position-vec3(2,-1.5,0.5), vec3(0.0), vec3(-2,2.2,-1), 0.4,0.4 ), vec3(0.2), 0.2, 0.5, 1  );
+    Surface leftConnection = Surface(  roundConeDist2(p-position-vec3(-2,-1.5,0.5), vec3(0.0), vec3(2,2.2,-1), 0.4,0.4 ), vec3(0.2), 0.2, 0.5, 1  );
+
+
+    turbineLeft = unionS(turbineLeft, leftConnection);
+    turbineRight = unionS(turbineRight, rightConnection);
+
+    hull = smoothUnionS(leftConnection, hull, 0.3);
+    hull = smoothUnionS(rightConnection, hull, 0.3);
+    
+    turbineLeft = subtractionS(unionS(turbineLeftDetail, turbineLeft ), turbineFireLeft);
+    turbineRight = subtractionS(unionS(turbineRightDetail,turbineRight), turbineFireRight);
+    turbineBack = subtractionS(unionS(turbineBackDetail, turbineBack), turbineFireBack);
+
+
+    hull = unionS(hull, turbineLeft);
+    hull = unionS(hull, turbineRight);
+
+    hull = unionS(hull,turbineBack);
+
+
+
+
+
+    hull = unionS(hull, visor);
+    return hull;
+}
+
+
+
 Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 
     p = opTransf(p, inverse(t));
@@ -825,7 +892,12 @@ Surface getDist(vec3 p)
     mat4 scopeRotation = rotY(30);
     Surface spac = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.5);
 
+    vec3 enemy_position = vec3(-4,0,10);
+    Surface enemy = Enemy(p, enemy_position, rotX(0), 0.5);
+    return enemy;
+
     d = unionS(d, spac);
+    d = unionS(d, enemy);
     d = unionS(d, sun);
     
     d = unionS(d, planet);
