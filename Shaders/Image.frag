@@ -977,13 +977,9 @@ Surface getDist(vec3 p)
     Surface rings = subtractionS(outerRing, innerRing);
 
 
-    
-    vec3 crystalPosition = vec3(2,0,8);
+    vec3 crystalPosition = vec3(2,0,4);
 
-    Surface c1 = crystalRock(p , vec3(-2,0,8), vec3(0.16,0.48,0.84) ,1, rotY(30*iTime));
-    return c1;
-    Surface c2 = crystal(p, vec3(2,0,8), vec3(0.16,0.48,0.84) ,0.8, rotX(0));
-
+    Surface c1 = crystalRock(p , crystalPosition, vec3(0.16,0.48,0.84) ,0.9, rotY(30*iTime));
 
     /*vec3 missilePosition = vec3(0,3.5,4);
     float radius = 0.3;
@@ -991,13 +987,13 @@ Surface getDist(vec3 p)
 
   /*  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));*/
   
-    vec3 spaceship_position = vec3(-3,0,12);
+    vec3 spaceship_position = vec3(0,0,5);
     mat4 scopeRotation = rotY(30);
-    Surface spac = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.5);
+    Surface spaceship = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.2);
 
     vec3 enemy_position = vec3(-4,0,10);
-    mat4 enemyRotation = rotZ(30*iTime)*rotY(30*iTime)*rotX(30*iTime);
-    float enemyScale = 1;
+    mat4 enemyRotation = rotX(0);
+    float enemyScale = 0.2;
     Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
 
     vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
@@ -1008,14 +1004,12 @@ Surface getDist(vec3 p)
     vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemyRotation);
 
     // Attached missiles
-    Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6, enemyRotation);
-    Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6, enemyRotation);
+    Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
+    Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
 
-
-    return c1;
 
     Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
-
+   
     d = sun;
 
     d = unionS(d, enemy);
@@ -1023,10 +1017,10 @@ Surface getDist(vec3 p)
     d = unionS(d, missile2);
 
 
-    d = unionS(d, spac);
+    d = unionS(d, spaceship);
     d = unionS(d, planet);
     d = unionS(d, rings);   
-    d = unionS(d, unionS(c1,c2));
+    d = unionS(d, c1);
 
     return d;
 }
@@ -1122,7 +1116,7 @@ void main()
 {
     vec2 p = (gl_FragCoord.xy-0.5*iResolution)/iResolution.y;
   
-    vec3 CAMERA= vec3 (3.6,3.5,-5.0);
+    vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0);
     vec3 Target = vec3 (0.0,1,10); // CAM TARGET
     Target = vec3(0,0,6);
 
