@@ -636,12 +636,19 @@ Surface Gun(vec3 p, vec3 position, float scale)
     gun.d *= scale;
     return gun;
 }
+Surface Bullet(vec3 p, vec3 position, float scale, mat4 t){
+    p = opTransf(p - position, inverse(t)) / scale;
+    return Surface(roundConeDist2(
+            p, vec3(0,0,.0),
+            vec3(0,0.0,1),
+            0.01,0.05
+        )*scale,
+        vec3(1,0,0), 1, 0.0, 2.0
+    );
+}
 
 Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
-  // p = opTransf(p-position, rotY(-45*iTime))+position;
-   // p = opTransf(p-position, rotY(-75))+position;
     // RED: vec3(0.93,0.0,0.19)
-    
     p = opTransf(p - position, inverse(t)) / scale + position;
     Surface hull = Surface( cylinderVerticalDist( opTransf(p-position-vec3(0,0.4,-0.8),rotX(90))  , vec2(1.2,1.6)), vec3(0.2), 0.2, 0.8, 1);    
 
@@ -951,6 +958,10 @@ Surface getDist(vec3 p)
     // Attached missiles
     Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6, enemyRotation);
     Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6, enemyRotation);
+
+
+
+    return Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
 
     d = sun;
 
