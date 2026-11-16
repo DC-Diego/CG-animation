@@ -537,13 +537,15 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
 
     crystalBody = unionS(crystalTop, crystalBody);
     return unionS(crystalBody, crystalBottom);
-}Surface Missile(vec3 p, vec3 missilePosition, float radius, float s, mat4 t)
+}
+Surface Missile(vec3 p, vec3 missilePosition, float radius, float s, mat4 t)
 {
     // Local coordinates
     vec3 q = (p - missilePosition) / s;
 
     // Apply inverse transformation
     q = opTransf(q, inverse(t));
+    q = opTransf(q, rotX(90));
 
     // Warhead
     Surface warhead = Surface(
@@ -600,15 +602,50 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
 
     return missile;
 }
+Surface Gun(vec3 p, vec3 position, float scale)
+{
+    p = (p - position) / scale;
+
+    // Barrel
+    Surface barrel = Surface(
+        cylinderVerticalDist(
+            opTransf(p-vec3(0,0,-0.8), rotX(90)),
+            vec2(0.16, 0.9)
+        ),
+        vec3(0.18), 0.2, 0.8, 2.0
+    );
+
+    Surface body = Surface(
+        roundConeDist2(
+            p-vec3(0,0,0.2),
+            vec3(0.0,0.0,0.0),
+            vec3(00,0.0,1),
+            0.2,0.4
+        ),
+        vec3(0.93,0.0,0.19), 0.2, 0.8, 1.0
+    );
+
+    Surface shooter = Surface(
+        cylinderVerticalDist(
+            opTransf(p-vec3(0,0,-1.7), rotX(90)),
+            vec2(0.21,0.12)
+        ),vec3(0.08), 0.2, 0.5, 5.0);
+
+    Surface gun = unionS(unionS(body, barrel), shooter);
+
+    gun.d *= scale;
+    return gun;
+}
 
 Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
-   p = opTransf(p-position, rotY(-45*iTime))+position;
+  // p = opTransf(p-position, rotY(-45*iTime))+position;
    // p = opTransf(p-position, rotY(-75))+position;
-
     // RED: vec3(0.93,0.0,0.19)
+    
+    p = opTransf(p - position, inverse(t)) / scale + position;
     Surface hull = Surface( cylinderVerticalDist( opTransf(p-position-vec3(0,0.4,-0.8),rotX(90))  , vec2(1.2,1.6)), vec3(0.2), 0.2, 0.8, 1);    
 
-    Surface detail = Surface(  torusDist(p-position-vec3(0,0,-3), vec2(2,0.5)), vec3(0.2),0.5,0.5,100);
+    Surface detail = Surface(  torusDist(p-position-vec3(0,0,-3), vec2(1.8,0.4)), vec3(0.2),0.5,0.5,100);
 
     Surface truncator = Surface( sphereDist(p,position+vec3(0,0.6,-5.0), 1.75), vec3(0.2), 0.5,0.5,0  );
 
@@ -658,11 +695,29 @@ Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
 
     hull = unionS(hull,turbineBack);
 
+    Surface gunLeft = Gun(p, position + vec3(-1.6,-0.8,-2.7), 0.6);
+    Surface gunRight = Gun(p, position + vec3(1.6,-0.8,-2.7), 0.6);
 
+    Surface gunLeftConnection = Surface(
+        boxDist(p-position-vec3(-1.6,-0.6,-2), vec3(0.1,0.3,0.1)),
+        vec3(0.2), 0.2, 0.5, 1.0
+    );
+
+    Surface gunRightConnection = Surface(
+        boxDist(p-position-vec3(1.6,-0.6,-2), vec3(0.1,0.3,0.1)),
+        vec3(0.2), 0.2, 0.5, 1.0
+    );
+
+    hull = smoothUnionS(hull, gunLeftConnection, 0.02);
+    hull = smoothUnionS(hull, gunRightConnection, 0.02);
+
+    hull = unionS(hull, gunLeft);
+    hull = unionS(hull, gunRight);
 
 
 
     hull = unionS(hull, visor);
+    hull.d *= scale;
     return hull;
 }
 
@@ -698,7 +753,7 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 }
 
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
-    position -= vec3(0,0,-5*cos(iTime));
+    //position -= vec3(0,0,-5*cos(iTime));
  
     // View spaceship
     p = opTransf(p-position, inverse(t))  / s;
@@ -863,17 +918,6 @@ Surface getDist(vec3 p)
 
     Surface rings = subtractionS(outerRing, innerRing);
 
-/*
-    Surface octPrism;
-    vec3 octPrismPos = vec3(0,2,10);
-    vec4 rx_p = rotX(30.*iTime)*vec4(p- octPrismPos ,1);
-    octPrism = Surface(octogonPrismDist(rx_p.xyz- octPrismPos*0 , 0.2,1), vec3(0.2,0.75,0.75),0.2,0.7,0.1);
-
-    Surface quad;
-    quad.d = boxDist(p-vec3(0,-1,10), vec3(3,1,3));
-    quad.color = vec3(0.9,0,0); quad.Ka = 0.2; quad.Kd = 0.5; quad.Ks = 0.3; 
-    d = unionS(octPrism, asteroid);
-*/
 
     
     vec3 crystalPosition = vec3(2,0,8);
@@ -882,9 +926,9 @@ Surface getDist(vec3 p)
     Surface c2 = crystal(p, vec3(2,0,8), vec3(0.16,0.48,0.84) ,0.8, rotX(0));
 
 
-    vec3 missilePosition = vec3(0,3.5,4);
+    /*vec3 missilePosition = vec3(0,3.5,4);
     float radius = 0.3;
-    d = Missile(p, missilePosition, radius, 0.5, rotX(0));
+    d = Missile(p, missilePosition, radius, 0.5, rotX(0));*/
 
   /*  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));*/
   
@@ -893,13 +937,30 @@ Surface getDist(vec3 p)
     Surface spac = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.5);
 
     vec3 enemy_position = vec3(-4,0,10);
-    Surface enemy = Enemy(p, enemy_position, rotX(0), 0.5);
-    return enemy;
+    mat4 enemyRotation = rotZ(30*iTime)*rotY(30*iTime)*rotX(30*iTime);
+    float enemyScale = 1;
+    Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
+
+    vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
+    vec3 rightMissileOffset = vec3( 0.6, -0.8, -3.5)*enemyScale;
+
+    // World positions relative to enemy
+    vec3 leftMissilePosition = enemy_position + opTransf(leftMissileOffset, enemyRotation);
+    vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemyRotation);
+
+    // Attached missiles
+    Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6, enemyRotation);
+    Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6, enemyRotation);
+
+    d = sun;
+
+    d = unionS(d, enemy);
+    d = unionS(d, missile1);
+    d = unionS(d, missile2);
+
+    return d;
 
     d = unionS(d, spac);
-    d = unionS(d, enemy);
-    d = unionS(d, sun);
-    
     d = unionS(d, planet);
     d = unionS(d, rings);   
     d = unionS(d, unionS(c1,c2));
