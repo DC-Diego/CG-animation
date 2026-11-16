@@ -520,12 +520,18 @@ vec2 toPlanetUV(vec3 p){
     return vec2(u,v);
 
 }
+
 Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
 {
     vec3 q = (p-crystalPosition)/s;
-
     q = opTransf(q, inverse(t));
-
+    Surface mainCrystal = Surface(pyramidDist(q, 2), color, 1,1,1);
+    mainCrystal = subtractionS(mainCrystal, Surface(boxDist(q-vec3(0,2,0),vec3(1,1,1)), color, 1,1,1));
+    mainCrystal = unionS(mainCrystal,  Surface(pyramidDist((q-vec3(0,1,0))/0.5, 0.5)*0.5, color, 1,1,1) );
+    mainCrystal = unionS(mainCrystal, Surface(boxDist(q-vec3(0,-1,0), vec3(0.5,1,0.5)), color, 1,1,1));
+    mainCrystal.d *= s;
+    return mainCrystal;
+/*
     Surface crystalTop = Surface(pyramidDist(q-vec3(0,1,0), 0.75)*s,
         color, 0.25,0.8,0.9);
 
@@ -536,8 +542,53 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
             1.75)*s,color, 0.2,0.8,0.2);
 
     crystalBody = unionS(crystalTop, crystalBody);
-    return unionS(crystalBody, crystalBottom);
+    return unionS(crystalBody, crystalBottom);*/
 }
+
+
+Surface crystalRock(vec3 p, vec3 position, vec3 color, float s, mat4 t)
+{
+    p = (p-position)/s;
+    p = opTransf(p, inverse(t));
+
+    Surface centralCrystal = crystal(
+        p, vec3(0), color, s, rotX(0)
+    );
+
+    Surface leftCrystal = crystal(
+        p, vec3(-0.95,-0.65,0),
+        color, s*0.65,
+        rotZ(20) 
+    );
+
+    Surface rightCrystal = crystal(
+        p, vec3(0.85,-0.65,0),
+        color, s*0.65,
+        rotZ(-20) 
+    );
+
+    Surface frontCrystal = crystal(
+        p, vec3(0,-0.65,0.85),
+        color, s*0.6,
+        rotX(15)
+    );
+
+    Surface backCrystal = crystal(
+        p, vec3(0,-0.65,-0.95),
+        color, s*0.6,
+        rotZ(15) * rotX(-20)
+    );
+
+    centralCrystal = unionS(centralCrystal, leftCrystal);
+    centralCrystal = unionS(centralCrystal, rightCrystal);
+    centralCrystal = unionS(centralCrystal, frontCrystal);
+    centralCrystal = unionS(centralCrystal, backCrystal);
+
+    return centralCrystal;
+}
+
+
+
 Surface Missile(vec3 p, vec3 missilePosition, float radius, float s, mat4 t)
 {
     // Local coordinates
@@ -929,7 +980,8 @@ Surface getDist(vec3 p)
     
     vec3 crystalPosition = vec3(2,0,8);
 
-    Surface c1 = crystal(p , vec3(-2,0,8), vec3(0.16,0.48,0.84) ,1, rotX(0));
+    Surface c1 = crystalRock(p , vec3(-2,0,8), vec3(0.16,0.48,0.84) ,1, rotY(30*iTime));
+    return c1;
     Surface c2 = crystal(p, vec3(2,0,8), vec3(0.16,0.48,0.84) ,0.8, rotX(0));
 
 
@@ -960,8 +1012,9 @@ Surface getDist(vec3 p)
     Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6, enemyRotation);
 
 
+    return c1;
 
-    return Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
+    Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
 
     d = sun;
 
@@ -969,7 +1022,6 @@ Surface getDist(vec3 p)
     d = unionS(d, missile1);
     d = unionS(d, missile2);
 
-    return d;
 
     d = unionS(d, spac);
     d = unionS(d, planet);
