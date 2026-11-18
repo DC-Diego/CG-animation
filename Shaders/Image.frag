@@ -811,15 +811,9 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 }
 
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
-    //position -= vec3(0,0,-5*cos(iTime));
- 
     // View spaceship
-    p = opTransf(p-position, inverse(t))  / s;
 
-
- //   p = opTransf(p-position, rotY(-45*iTime))+position;
-
- //   p = opTransf(p-position, rotY(-40))+position;
+    p = opTransf(p-position, inverse(t))  / s+position;
 
     Surface hull = Surface(
         boxDist(p-position, vec3(1.5,1.5,3)),
@@ -942,7 +936,7 @@ Surface getDist(vec3 p)
     OctPrism.color = vec3(0.4,0.2,0.7); OctPrism.Ka=0.2; OctPrism.Kd=0.7;OctPrism.Ks=0.1;
     d=unionS(OctPrism,d);*/
 
-    Surface d;
+    Surface d = Surface(MAX_DIST+1, vec3(0,0,0), 0,0,0);
 
 /*    Surface plane;
     plane.d = planeDist(p,vec3(0,1,0),0.0);
@@ -979,7 +973,7 @@ Surface getDist(vec3 p)
 
     vec3 crystalPosition = vec3(2,0,4);
 
-    Surface c1 = crystalRock(p , crystalPosition, vec3(0.16,0.48,0.84) ,0.9, rotY(30*iTime));
+   // Surface c1 = crystalRock(p , crystalPosition, vec3(0.16,0.48,0.84) ,0.9, rotY(30*iTime));
 
     /*vec3 missilePosition = vec3(0,3.5,4);
     float radius = 0.3;
@@ -987,42 +981,81 @@ Surface getDist(vec3 p)
 
   /*  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));*/
   
-    vec3 spaceship_position = vec3(0,0,5);
+
+
+
+    vec3 spaceship_position = vec3(1,0,5);
+    mat4 spaceship_rotation = rotX(30*iTime);
+    float spaceship_scale = 0.2;
     mat4 scopeRotation = rotY(30);
-    Surface spaceship = Spaceship(p, spaceship_position, rotX(0), scopeRotation, 0.2);
 
-    vec3 enemy_position = vec3(-4,0,10);
-    mat4 enemyRotation = rotX(0);
+
+    Surface SPACESHIP_BOUNDING_SPHERE = Surface( sphereDist(p, spaceship_position, 10*spaceship_scale), vec3(0,0,1),1,1,1 );
+
+
+
+    if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON){
+        Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
+        d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
+        d = unionS(d, spaceship);
+    }else{
+        d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
+
+
+    }
+
+
+  //  return unionS(spaceship, SPACESHIP_BOUNDING_SPHERE);
+
+
+
+    vec3 enemy_position = vec3(-4,0,5);
+    mat4 enemyRotation = rotX(30*iTime);
     float enemyScale = 0.2;
-    Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
-
-    vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
-    vec3 rightMissileOffset = vec3( 0.6, -0.8, -3.5)*enemyScale;
-
-    // World positions relative to enemy
-    vec3 leftMissilePosition = enemy_position + opTransf(leftMissileOffset, enemyRotation);
-    vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemyRotation);
-
-    // Attached missiles
-    Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
-    Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
 
 
-    Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
+    Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemyScale ), vec3(0,0,1), 1,1,1);
+
+    
+//    d = unionS(sun, ENEMY_BOUND_SPHERE);
+    if( ENEMY_BOUND_SPHERE.d  <= (0+EPSILON) ){
+        Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
+
+        vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
+        vec3 rightMissileOffset = vec3( 0.6, -0.8, -3.5)*enemyScale;
+
+        // World positions relative to enemy
+        vec3 leftMissilePosition = enemy_position + opTransf(leftMissileOffset, enemyRotation);
+        vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemyRotation);
+
+        // Attached missiles
+        Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
+        Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
+
+//        d = unionS(d, enemy);
+        d = unionS(d, enemy);
+        d = unionS(d, missile1);
+        d = unionS(d, missile2);
+
+    }else{
+        d = unionS(ENEMY_BOUND_SPHERE,d);
+        
+    }
+
+//    Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
    
-    d = sun;
+    d = unionS(sun,d);
 
-    d = unionS(d, enemy);
-    d = unionS(d, missile1);
-    d = unionS(d, missile2);
+  
 
-
+    return d;
+/*
     d = unionS(d, spaceship);
     d = unionS(d, planet);
     d = unionS(d, rings);   
     d = unionS(d, c1);
 
-    return d;
+    return d;*/
 }
 
 
