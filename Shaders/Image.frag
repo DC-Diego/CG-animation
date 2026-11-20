@@ -810,6 +810,67 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 }
 
 
+Surface miningClaw(vec3 p, vec3 position, float s, mat4 t, mat4 angle1, mat4 angle2, mat4 angle3, float openness){
+    p = opTransf(p-position, inverse(t))  / s+position;
+
+
+
+    Surface claw = Surface(MAX_DIST+1, vec3(0,0,0),0,0,0);
+    Surface mainAngular = Surface(sphereDist(p, position, 1), spaceship_color, 0.2, 0.5, 0.3 );
+
+    vec3 PIVOT_1 = opTransf(p-position, angle1);
+    Surface arm1 = Surface( boxDist( PIVOT_1-vec3(0,-2.5,0), vec3(0.5,2.5,0.3)              ), vec3(0.4), 0.2, 0.5, 0.3);
+
+    Surface armJoint = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
+    Surface armJointDetail = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.6,0.3)), vec3(0.4), 0.3, 0.5, 0.7 );
+    armJoint = unionS(armJoint,armJointDetail);
+
+
+    vec3 PIVOT_2 = opTransf(  PIVOT_1-vec3(0,-5,0), angle2);
+    Surface arm2 = Surface( boxDist( PIVOT_2-vec3(0,-3,0), vec3(0.5,3,0.3)), vec3(0.4), 0.2, 0.5, 0.3);
+
+    Surface clawJoint = Surface(sphereDist(  PIVOT_2,vec3(0,-6,0),0.8), spaceship_color, 0.3, 0.5, 0.7 );
+//    Surface clawJoint = Surface(cylinderVerticalDist(  opTransf(PIVOT_2-vec3(0,-6,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
+
+    vec3 PIVOT_3 = opTransf(  PIVOT_2-vec3(0,-6,0), angle3);
+
+    float openAngle = openness*60;
+    float limitAngle = 30;
+
+
+    vec3 clawU_PIV = opTransf(PIVOT_3, rotZ(-openAngle-limitAngle));
+
+    Surface upperClaw = Surface( boxDist( clawU_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    Surface upperClawDetail = Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
+
+    upperClawDetail = unionS(upperClawDetail, Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
+    Surface upperClawFinger = Surface( boxDist( opTransf(clawU_PIV+vec3(0,2,0), rotZ(50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+
+
+    upperClaw = unionS(upperClaw, upperClawDetail);
+    upperClaw = unionS(upperClaw, upperClawFinger);
+
+    vec3 clawD_PIV = opTransf(PIVOT_3, rotZ(openAngle+limitAngle));
+    Surface downClaw = Surface( boxDist( clawD_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    Surface downClawDetail = Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
+
+    downClawDetail = unionS(downClawDetail, Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
+    Surface downClawFinger = Surface( boxDist( opTransf(clawD_PIV+vec3(0,2,0), rotZ(-50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    downClaw = unionS(downClaw, downClawDetail);
+    downClaw = unionS(downClaw, downClawFinger);
+
+    claw = unionS(claw, mainAngular);
+    claw = unionS(claw, arm1);
+    claw = unionS(claw, armJoint);
+    claw = unionS(claw, arm2);
+    claw = unionS(claw, clawJoint);
+    claw = unionS(claw, upperClaw);
+    claw = unionS(claw, downClaw);
+
+    claw.d *= s;
+    return claw;
+}
+
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     // View spaceship
 
@@ -904,6 +965,18 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
 
     Surface result = unionS(visor, hull);
 
+
+    vec3 claw_position = vec3(0,1,6);
+    mat4 claw_rotation =  rotY(0);
+    float claw_scale =  0.5;
+
+    mat4 claw_angle1 = rotY(90)*rotX(70);
+    mat4 claw_angle2 = rotZ(140);
+    mat4 claw_angle3 = rotX(40)*rotY(90);
+    float claw_open = 0;
+    Surface claw = miningClaw(p, position-vec3(0,1.5,0),claw_scale,claw_rotation,claw_angle1, claw_angle2 ,claw_angle3 , claw_open);
+
+    result = unionS(result, claw);
     result.d *= s;
 
     return result;
@@ -911,80 +984,10 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
 
 }
 
-Surface miningClaw(vec3 p, vec3 position, float s, mat4 t, mat4 angle1, mat4 angle2, mat4 angle3, float openness){
-
-    t = rotY(iTime*30);
-
-    p = opTransf(p-position, inverse(t))  / s+position;
-
-
-    angle1 = rotZ(iTime*40*2)* rotY(iTime*30*2)*rotX(iTime*15*2);
-    angle2 = rotZ(iTime*40);
-    angle3 = rotY(iTime*360);
-    
-   /*
-    angle1 = rotX(0);
-    angle2 = rotZ(-135);
-    angle3 = rotY(iTime*40*0);*/
-
-    Surface claw = Surface(MAX_DIST+1, vec3(0,0,0),0,0,0);
-    Surface mainAngular = Surface(sphereDist(p, position, 1), spaceship_color, 0.2, 0.5, 0.3 );
-
-    vec3 PIVOT_1 = opTransf(p-position, angle1);
-    Surface arm1 = Surface( boxDist( PIVOT_1-vec3(0,-2.5,0), vec3(0.5,2.5,0.3)              ), vec3(0.4), 0.2, 0.5, 0.3);
-
-    Surface armJoint = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
-    Surface armJointDetail = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.6,0.3)), vec3(0.4), 0.3, 0.5, 0.7 );
-    armJoint = unionS(armJoint,armJointDetail);
-
-
-    vec3 PIVOT_2 = opTransf(  PIVOT_1-vec3(0,-5,0), angle2);
-    Surface arm2 = Surface( boxDist( PIVOT_2-vec3(0,-3,0), vec3(0.5,3,0.3)), vec3(0.4), 0.2, 0.5, 0.3);
-
-    Surface clawJoint = Surface(sphereDist(  PIVOT_2,vec3(0,-6,0),0.8), spaceship_color, 0.3, 0.5, 0.7 );
-//    Surface clawJoint = Surface(cylinderVerticalDist(  opTransf(PIVOT_2-vec3(0,-6,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
-
-    vec3 PIVOT_3 = opTransf(  PIVOT_2-vec3(0,-6,0), angle3);
-
-    openness = cos(iTime*20)*0.5+0.5;
-    float openAngle = openness*60;
-    float limitAngle = 30;
-
-
-    vec3 clawU_PIV = opTransf(PIVOT_3, rotZ(-openAngle-limitAngle));
-
-    Surface upperClaw = Surface( boxDist( clawU_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
-    Surface upperClawDetail = Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
-
-    upperClawDetail = unionS(upperClawDetail, Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
-    Surface upperClawFinger = Surface( boxDist( opTransf(clawU_PIV+vec3(0,2,0), rotZ(50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
-
-
-    upperClaw = unionS(upperClaw, upperClawDetail);
-    upperClaw = unionS(upperClaw, upperClawFinger);
-
-    vec3 clawD_PIV = opTransf(PIVOT_3, rotZ(openAngle+limitAngle));
-    Surface downClaw = Surface( boxDist( clawD_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
-    Surface downClawDetail = Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
-
-    downClawDetail = unionS(downClawDetail, Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
-    Surface downClawFinger = Surface( boxDist( opTransf(clawD_PIV+vec3(0,2,0), rotZ(-50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
-    downClaw = unionS(downClaw, downClawDetail);
-    downClaw = unionS(downClaw, downClawFinger);
-
-    claw = unionS(claw, mainAngular);
-    claw = unionS(claw, arm1);
-    claw = unionS(claw, armJoint);
-    claw = unionS(claw, arm2);
-    claw = unionS(claw, clawJoint);
-    claw = unionS(claw, upperClaw);
-    claw = unionS(claw, downClaw);
-
-    claw.d *= s;
-    return claw;
+Surface MainAsteroid(vec3 p, vec3 position, float r){
+    Surface mainAsteroid = Surface(sphereDist(p,position,r), vec3(0.2), 0.5,0.5,0.5);
+    return mainAsteroid;
 }
-
-
 
 Surface getDist(vec3 p)
 {
@@ -1023,20 +1026,18 @@ Surface getDist(vec3 p)
     Surface rings = subtractionS(outerRing, innerRing);
 
 
-    vec3 claw_position = vec3(0,1,6);
-    Surface claw = miningClaw(p, claw_position, 0.5, rotX(0), rotY(0),rotY(0), rotY(0),1);
-    return claw;
-
+   
+   
     vec3 crystal_position = vec3(0,3,0);
     mat4 crystal_rotation = rotY(30*iTime);
-    float crystal_scale = 0.5;
+    float crystal_scale = 0.25;
 
     Surface CRYSTAL_BOUNDING_SPHERE = Surface( sphereDist(p, crystal_position, 1.8*crystal_scale), vec3(0,0,1),1,1,1 );
 
 
 
 
-    if(CRYSTAL_BOUNDING_SPHERE.d <= EPSILON){
+    if(CRYSTAL_BOUNDING_SPHERE.d <= EPSILON ){
         Surface c1 = crystalRock(p , crystal_position, vec3(0.16,0.48,0.84) ,crystal_scale, crystal_rotation);
       //  d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
         d = unionS(d, c1);
@@ -1062,7 +1063,7 @@ Surface getDist(vec3 p)
 
     vec3 spaceship_position = vec3(1,0,5);
     mat4 spaceship_rotation = rotX(30*iTime);
-    float spaceship_scale = 0.2;
+    float spaceship_scale = 0.3;
     mat4 scopeRotation = rotY(0);
 
 
@@ -1070,10 +1071,12 @@ Surface getDist(vec3 p)
 
 
 
-    if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON){
+    if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON ){
         Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
+
     //    d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
         d = unionS(d, spaceship);
+        return d;
     }else{
         d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
 
@@ -1081,13 +1084,10 @@ Surface getDist(vec3 p)
     }
 
 
-  //  return unionS(spaceship, SPACESHIP_BOUNDING_SPHERE);
-
-
 
     vec3 enemy_position = vec3(-4,0,5);
     mat4 enemyRotation = rotX(30*iTime);
-    float enemyScale = 0.2;
+    float enemyScale = 0.4;
 
 
     Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemyScale ), vec3(0,0,1), 1,1,1);
@@ -1108,11 +1108,11 @@ Surface getDist(vec3 p)
         Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
         Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
 
-//        d = unionS(d, enemy);
-        d = unionS(d, enemy);
+//        d = unionS(ENEMY_BOUND_SPHERE,d);
+      //  d = enemy;
+  d = unionS(d, enemy);
         d = unionS(d, missile1);
         d = unionS(d, missile2);
-
     }else{
         d = unionS(ENEMY_BOUND_SPHERE,d);
         
