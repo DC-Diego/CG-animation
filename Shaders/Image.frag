@@ -487,7 +487,18 @@ Surface smoothUnionS(Surface s1, Surface s2, float k) {
     return result;
 }
 
+Surface smoothSubtractionS(Surface a, Surface b, float k) {
+    float h = clamp(0.5 - 0.5 * (b.d + a.d) / k, 0.0, 1.0);
+    Surface result;
+    result.d = mix(a.d, -b.d, h) + k * h * (1.0 - h);
 
+    result.color = mix(b.color, a.color, h);
+    result.Ka = mix(b.Ka, a.Ka, h);
+    result.Kd = mix(b.Kd, a.Kd, h);
+    result.Ks = mix(b.Ks, a.Ks, h);
+
+    return result;
+}
 Surface csgObject(vec3 p)
 {
     float t =iTime;
@@ -984,8 +995,86 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
 
 }
 
-Surface MainAsteroid(vec3 p, vec3 position, float r){
-    Surface mainAsteroid = Surface(sphereDist(p,position,r), vec3(0.2), 0.5,0.5,0.5);
+
+Surface simpleAsteroid(vec3 p, vec3 position, float r, mat4 t, vec3 rockColor) {
+
+
+    Surface ASTEROID_BOUNDING_SPHERE = Surface(sphereDist(p,position,1.2*r), vec3(0),0,0,0);
+    
+    if(ASTEROID_BOUNDING_SPHERE.d > EPSILON){
+        return ASTEROID_BOUNDING_SPHERE;
+    }
+    vec3 q = opTransf(p - position, inverse(t));
+
+
+    Surface body = Surface(
+        ellipsoidDist(q, r * vec3(1.0, 0.78, 0.9)),
+        rockColor, 0.8, 0.4, 0.2
+    );
+
+    // Rock formations
+    Surface d1 = Surface(
+        ellipsoidDist(q-r*vec3(0.55,0.35,0.1),
+        r*vec3(0.48,0.45,0.55)),
+        rockColor, 0.8, 0.4, 0.2
+    );
+
+    Surface d2 = Surface(
+        ellipsoidDist(q-r*vec3(-0.45,-0.3,0.5),
+        r*vec3(0.4,0.55,0.38)),
+        rockColor, 0.8, 0.4, 0.2
+    );
+
+    Surface d3 = Surface(
+        ellipsoidDist(q-r*vec3(-0.2,0.4,-0.55),
+        r*vec3(0.35,0.3,0.4)),
+        rockColor, 0.8, 0.4, 0.2
+    );
+
+    body = smoothUnionS(body,d1,0.2*r);
+    body = smoothUnionS(body,d2,0.18*r);
+    body = smoothUnionS(body,d3,0.15*r);
+
+    vec3 craterPositions[6] = vec3[](
+        vec3( 0.65, 0.45, 0.55),
+        vec3(-0.65, 0.35, 0.35),
+        vec3( 0.15,-0.65, 0.65),
+        vec3(-0.35,-0.25,-0.85),
+        vec3( 0.75,-0.25,-0.25),
+        vec3(-0.15, 0.75,-0.45)
+    );
+
+    float craterRadii[6] = float[](
+        0.13, 0.10, 0.16, 0.12, 0.13, 0.11
+    );
+
+    for(int i = 0; i < 6; i++) {
+
+        vec3 cp = craterPositions[i] * r;
+
+        float craterRadius = 1.3*craterRadii[i] * r;
+
+        Surface crater = Surface(
+            sphereDist(q, cp, craterRadius),
+            rockColor, 0.8, 0.4, 0.2
+        );
+
+        body = smoothSubtractionS(body, crater, 0.35*r);
+    }
+
+    return body;
+}
+
+
+Surface MainAsteroid(vec3 p, vec3 position, float r, mat4 t){
+
+    vec3 c = opTransf(p-position, inverse(t)) ;
+    
+
+    Surface mainAsteroid = simpleAsteroid(p,position, r*(1),t , vec3(0.20, 0.19, 0.17));
+
+
+
     return mainAsteroid;
 }
 
@@ -1001,11 +1090,11 @@ Surface getDist(vec3 p)
     plane.Ks = 0.8;*/
 
 
-   /* Surface asteroid = Surface(asteroidDist(p, vec3(5,0,10), 0.8, 1),vec3(0.42, 0.36, 0.929), 0.15,0.8,0.05 );
-    Surface asteroid2 = Surface(asteroidDist(p, vec3(-5,5,10), 0.8, 2),vec3(0.52, 0.46, 0.39), 0.15,0.8,0.05 );
-    Surface asteroid3 = Surface(asteroidDist(p, vec3(-5,0,15), 0.8, 3),vec3(0.42, 0.36, 0.29), 0.15,0.8,0.05 );
-    Surface asteroid4 = Surface(asteroidDist(p, vec3(5,2,12), 0.8, 4),vec3(0.42, 0.936, 0.929), 0.15,0.8,0.05 );
-    Surface asteroid5 = Surface(asteroidDist(p, vec3(3,-2,14), 0.8, 5),vec3(0.942, 0.36, 0.29), 0.15,0.8,0.05 );*/
+    Surface asteroid = simpleAsteroid(p, vec3(5,0,10), 0.8, rotY(32),vec3(0.20, 0.19, 0.17));
+    Surface asteroid2 = simpleAsteroid(p, vec3(-5,5,10), 0.8, rotY(32*2),vec3(0.21, 0.19, 0.23));
+    Surface asteroid3 = simpleAsteroid(p, vec3(-5,0,15), 0.8, rotY(32*3),vec3(0.24, 0.12, 0.17));
+    Surface asteroid4 = simpleAsteroid(p, vec3(5,2,12), 0.8, rotY(32*4) ,vec3(0.14, 0.1, 0.07));
+    Surface asteroid5 = simpleAsteroid(p, vec3(3,-2,14), 0.8, rotY(32*5),vec3(0.20, 0.09, 0.17));
 
 
     Surface sun = Surface( sphereDist(p,vec3(15,5,30),3), vec3(1,0.9,0),1,1,0);
@@ -1026,7 +1115,12 @@ Surface getDist(vec3 p)
     Surface rings = subtractionS(outerRing, innerRing);
 
 
-   
+    d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));
+    mat4 asteroid_rotation = rotY(iTime*30);
+    Surface mainAst = MainAsteroid(p, vec3(0,0,10), 2, asteroid_rotation);
+    d= unionS(d, mainAst);
+    return d;
+
    
     vec3 crystal_position = vec3(0,3,0);
     mat4 crystal_rotation = rotY(30*iTime);
