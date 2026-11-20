@@ -15,6 +15,7 @@ float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
 float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
+#define DEBUGMODE true
 
 
 struct  Surface {
@@ -24,7 +25,7 @@ struct  Surface {
     float Kd;
     float Ks;
 };
-
+vec3 spaceship_color = vec3(0.3,0.5,1);
 
 const vec3 COLOR_BACKGROUND = vec3(0.25, 0.2, 0.22);
 
@@ -545,38 +546,35 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
     return unionS(crystalBody, crystalBottom);*/
 }
 
-
 Surface crystalRock(vec3 p, vec3 position, vec3 color, float s, mat4 t)
 {
+    position += vec3(0, 0.55, 0)*s;
+
     p = (p-position)/s;
     p = opTransf(p, inverse(t));
 
     Surface centralCrystal = crystal(
-        p, vec3(0), color, s, rotX(0)
+        p, vec3(0), color, 1.0*s, rotX(0)
     );
 
     Surface leftCrystal = crystal(
-        p, vec3(-0.95,-0.65,0),
-        color, s*0.65,
-        rotZ(20) 
+        p, vec3(-0.95,-0.65,0)*s,
+        color, s*0.65, rotZ(20)
     );
 
     Surface rightCrystal = crystal(
-        p, vec3(0.85,-0.65,0),
-        color, s*0.65,
-        rotZ(-20) 
+        p, vec3(0.85,-0.65,0)*s,
+        color, s*0.65, rotZ(-20)
     );
 
     Surface frontCrystal = crystal(
-        p, vec3(0,-0.65,0.85),
-        color, s*0.6,
-        rotX(15)
+        p, vec3(0,-0.65,0.85)*s,
+        color, s*0.6, rotX(15)
     );
 
     Surface backCrystal = crystal(
-        p, vec3(0,-0.65,-0.95),
-        color, s*0.6,
-        rotZ(15) * rotX(-20)
+        p, vec3(0,-0.65,-0.95)*s,
+        color, s*0.6, rotZ(15) * rotX(-20)
     );
 
     centralCrystal = unionS(centralCrystal, leftCrystal);
@@ -584,6 +582,7 @@ Surface crystalRock(vec3 p, vec3 position, vec3 color, float s, mat4 t)
     centralCrystal = unionS(centralCrystal, frontCrystal);
     centralCrystal = unionS(centralCrystal, backCrystal);
 
+    centralCrystal.d *= s;
     return centralCrystal;
 }
 
@@ -786,14 +785,14 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
     p = opTransf(p, inverse(t));
 
     Surface haste = Surface( cylinderVerticalDist( p-position-vec3(0,1,0),vec2(0.08,1.1)), vec3(0.2), 0.2,0.5,1);
-    Surface support = Surface( sphereDist( p,position+vec3(0,2,0),0.12), vec3(0.3,0.5,1), 0.2,0.5,1);
+    Surface support = Surface( sphereDist( p,position+vec3(0,2,0),0.12), spaceship_color, 0.2,0.5,1);
   
     vec3 q = opTransf(p-position-vec3(0,2,0), scopeRot  )+position+vec3(0,2,0);
 
     Surface mainTube = Surface(cylinderVerticalDist(opTransf(q-position -vec3(0,2.2,-0.4),rotX(90)), vec2(0.2,1)), vec3(0.2), 0.2, 0.5, 0.9 );
 
-    Surface tubeDetail = Surface( cylinderVerticalDist(  opTransf(q-position-vec3(0,2.2,-1.3),rotX(90)) , vec2(0.22,0.15)),vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
-    Surface tubeDetail2 = Surface(   cylinderVerticalDist(  opTransf(q-position-vec3(0,2.2,0.7),rotX(90)) , vec2(0.22,0.15)),vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface tubeDetail = Surface( cylinderVerticalDist(  opTransf(q-position-vec3(0,2.2,-1.3),rotX(90)) , vec2(0.22,0.15)),spaceship_color, 0.2, 0.5, 0.9 );
+    Surface tubeDetail2 = Surface(   cylinderVerticalDist(  opTransf(q-position-vec3(0,2.2,0.7),rotX(90)) , vec2(0.22,0.15)),spaceship_color, 0.2, 0.5, 0.9 );
     Surface view = Surface( sphereDist( q,position+vec3(0,2.2,-1.4),0.2), vec3(0,0,0.1), 0.0,0.25,2);
 
 
@@ -810,8 +809,10 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
 
 }
 
+
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     // View spaceship
+
 
     p = opTransf(p-position, inverse(t))  / s+position;
 
@@ -822,13 +823,13 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     );
     hull = unionS(hull, Surface(
         boxDist(p-position-vec3(0,0.2,0), vec3(1.2,1.4,2.7)),
-        vec3(0.3,0.5,1),
+        spaceship_color,
         0.1, 1,0.6
     ));
 
     Surface visor = Surface(
         pyramidDist(   opTransf((p-position +vec3(0,0,3))/3, rotX(90)), 2.5)*3,
-        vec3(0.3,0.5,1),
+        spaceship_color,
         0.2,0.5,0.9
     );
 
@@ -841,11 +842,11 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     glass = subtractionS(glass, Surface(boxDist(p-position+vec3(0,0,11), vec3(1,1,3)), vec3(0,0.8,1), 0.2,0.5,5));
     
 
-    Surface trunc = Surface(boxDist(p-position+vec3(0,0,12), vec3(1,1,3)), vec3(0.3,0.5,1), 0.2,0.5,0.9);
+    Surface trunc = Surface(boxDist(p-position+vec3(0,0,12), vec3(1,1,3)), spaceship_color, 0.2,0.5,0.9);
   
     Surface turbineBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0,3),rotX(90)) , vec2(1.2,1.2)), vec3(0.2), 0.2, 0.5, 0.9 );
     Surface turbineFireBack = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(0,0,4),rotX(90)) , vec2(0.8,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
-    Surface turbineBackDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(0,0,3),rotX(90)) , vec2(1.4,0.75)),vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface turbineBackDetail = Surface(   cylinderVerticalDist(  opTransf(p-position-vec3(0,0,3),rotX(90)) , vec2(1.4,0.75)),spaceship_color, 0.2, 0.5, 0.9 );
 
     turbineBack = subtractionS(unionS(turbineBackDetail, turbineBack), turbineFireBack);
 
@@ -853,7 +854,7 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
 
 
 
-    Surface turbineLeftSpear = Surface(   roundConeDist2( p-position  -vec3(6,1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface turbineLeftSpear = Surface(   roundConeDist2( p-position  -vec3(6,1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), spaceship_color, 0.2, 0.5, 0.9 );
     Surface turbineLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(6,1,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
 
     Surface turbineFireLeft = Surface(   cylinderVerticalDist(  opTransf(p-position  -vec3(6,1,1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
@@ -864,7 +865,7 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
         vec3(0.2),
         0.2,0.5,0.9
     );
-    wingLeft_frust = unionS(wingLeft_frust, Surface(boxDist(p-position+vec3(-1.6,0,0), vec3(0.3,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
+    wingLeft_frust = unionS(wingLeft_frust, Surface(boxDist(p-position+vec3(-1.6,0,0), vec3(0.3,1.1,1.1)), spaceship_color, 0.2, 0.5,0.9)  );
     Surface wingLeft_trunc = Surface(boxDist(    opTransf(p-position+vec3(-8,-1,0),rotZ(-15)), vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
     Surface leftWing = subtractionS(wingLeft_frust, wingLeft_trunc);
     turbineLeft = unionS(leftWing, turbineLeft);
@@ -874,7 +875,7 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     turbineLeft = unionS(turbineLeft, turbineLeftSpear);
 
     // RIGHT
-    Surface turbineRightSpear = Surface(   roundConeDist2( p-position +vec3(6,-1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), vec3(0.3,0.5,1), 0.2, 0.5, 0.9 );
+    Surface turbineRightSpear = Surface(   roundConeDist2( p-position +vec3(6,-1,0), vec3(0,0,0), vec3(0,0,-3), 0.3,0.2), spaceship_color, 0.2, 0.5, 0.9 );
     Surface turbineRight = Surface(cylinderVerticalDist(opTransf(p-position + vec3(6,-1,0),rotX(90)) , vec2(1,1.4)), vec3(0.2), 0.2, 0.5, 0.9 );
     Surface turbineFireRight = Surface( cylinderVerticalDist( opTransf(p-position +vec3(6,-1,-1),rotX(90)) , vec2(0.7,0.7)), vec3(1,0.31,0.09), 1, 0, 10 );
     Surface turbineRightDetail = Surface( cylinderVerticalDist(opTransf(p-position+vec3(6,-1,0),rotX(90)) , vec2(1.2,0.95)), vec3(0.2), 0.2, 0.5, 0.9 );
@@ -884,7 +885,7 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
         vec3(0.2),
         0.2,0.5,0.9
     );
-    wingRight_frust = unionS(wingRight_frust, Surface(boxDist(p-position+vec3(1.6,0,0)  , vec3(0.3,1.1,1.1)), vec3(0.3,0.5,1), 0.2, 0.5,0.9)  );
+    wingRight_frust = unionS(wingRight_frust, Surface(boxDist(p-position+vec3(1.6,0,0)  , vec3(0.3,1.1,1.1)), spaceship_color, 0.2, 0.5,0.9)  );
     Surface wingRight_trunc = Surface(boxDist(   opTransf(p-position+vec3(8,-1,0),rotZ(15)) , vec3(2,1,1)), vec3(0.2), 0.2,0.5,0.9);
     Surface RightWing = subtractionS(wingRight_frust, wingRight_trunc);
     turbineRight = unionS(RightWing, turbineRight);
@@ -910,32 +911,83 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
 
 }
 
+Surface miningClaw(vec3 p, vec3 position, float s, mat4 t, mat4 angle1, mat4 angle2, mat4 angle3, float openness){
+
+    t = rotY(iTime*30);
+
+    p = opTransf(p-position, inverse(t))  / s+position;
+
+
+    angle1 = rotZ(iTime*40*2)* rotY(iTime*30*2)*rotX(iTime*15*2);
+    angle2 = rotZ(iTime*40);
+    angle3 = rotY(iTime*360);
+    
+   /*
+    angle1 = rotX(0);
+    angle2 = rotZ(-135);
+    angle3 = rotY(iTime*40*0);*/
+
+    Surface claw = Surface(MAX_DIST+1, vec3(0,0,0),0,0,0);
+    Surface mainAngular = Surface(sphereDist(p, position, 1), spaceship_color, 0.2, 0.5, 0.3 );
+
+    vec3 PIVOT_1 = opTransf(p-position, angle1);
+    Surface arm1 = Surface( boxDist( PIVOT_1-vec3(0,-2.5,0), vec3(0.5,2.5,0.3)              ), vec3(0.4), 0.2, 0.5, 0.3);
+
+    Surface armJoint = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
+    Surface armJointDetail = Surface( cylinderVerticalDist(  opTransf(PIVOT_1-vec3(0,-5,0), rotX(90))  , vec2(0.6,0.3)), vec3(0.4), 0.3, 0.5, 0.7 );
+    armJoint = unionS(armJoint,armJointDetail);
+
+
+    vec3 PIVOT_2 = opTransf(  PIVOT_1-vec3(0,-5,0), angle2);
+    Surface arm2 = Surface( boxDist( PIVOT_2-vec3(0,-3,0), vec3(0.5,3,0.3)), vec3(0.4), 0.2, 0.5, 0.3);
+
+    Surface clawJoint = Surface(sphereDist(  PIVOT_2,vec3(0,-6,0),0.8), spaceship_color, 0.3, 0.5, 0.7 );
+//    Surface clawJoint = Surface(cylinderVerticalDist(  opTransf(PIVOT_2-vec3(0,-6,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color, 0.3, 0.5, 0.7 );
+
+    vec3 PIVOT_3 = opTransf(  PIVOT_2-vec3(0,-6,0), angle3);
+
+    openness = cos(iTime*20)*0.5+0.5;
+    float openAngle = openness*60;
+    float limitAngle = 30;
+
+
+    vec3 clawU_PIV = opTransf(PIVOT_3, rotZ(-openAngle-limitAngle));
+
+    Surface upperClaw = Surface( boxDist( clawU_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    Surface upperClawDetail = Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
+
+    upperClawDetail = unionS(upperClawDetail, Surface( cylinderVerticalDist(  opTransf(clawU_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
+    Surface upperClawFinger = Surface( boxDist( opTransf(clawU_PIV+vec3(0,2,0), rotZ(50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+
+
+    upperClaw = unionS(upperClaw, upperClawDetail);
+    upperClaw = unionS(upperClaw, upperClawFinger);
+
+    vec3 clawD_PIV = opTransf(PIVOT_3, rotZ(openAngle+limitAngle));
+    Surface downClaw = Surface( boxDist( clawD_PIV-vec3(0,-1,0)  , vec3(0.5,1,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    Surface downClawDetail = Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.6,0.35)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7);
+
+    downClawDetail = unionS(downClawDetail, Surface( cylinderVerticalDist(  opTransf(clawD_PIV+vec3(0,2,0), rotX(90)) , vec2(0.5,0.5)), spaceship_color-vec3(0.1,0.1,0.1), 0.3, 0.5, 0.7));
+    Surface downClawFinger = Surface( boxDist( opTransf(clawD_PIV+vec3(0,2,0), rotZ(-50))   -vec3(0,-0.8,0), vec3(0.4,1.0,0.3)), spaceship_color, 0.3, 0.5, 0.7);
+    downClaw = unionS(downClaw, downClawDetail);
+    downClaw = unionS(downClaw, downClawFinger);
+
+    claw = unionS(claw, mainAngular);
+    claw = unionS(claw, arm1);
+    claw = unionS(claw, armJoint);
+    claw = unionS(claw, arm2);
+    claw = unionS(claw, clawJoint);
+    claw = unionS(claw, upperClaw);
+    claw = unionS(claw, downClaw);
+
+    claw.d *= s;
+    return claw;
+}
+
+
 
 Surface getDist(vec3 p)
 {
-   /* float ds = heartDist(p,vec3(0.0,1.0,6.0),1.0);
-    Surface Sphere;
-    Sphere.d = ds;
-    Sphere.color = vec3 (0.9,0.1,0.05); Sphere.Ka=0.2; Sphere.Kd=0.3;Sphere.Ks=0.5;
-    float dp = planeDist(p,vec3 (0.0,1.0,0.0),0.0);
-    Surface Plane;
-    Plane.d=dp;
-    Plane.color=vec3(0.75); Plane.Ka=0.2; Plane.Kd=0.4;Plane.Ks=0.4;
-    Surface d= unionS(Sphere,Plane);
-    Surface CSG;
-    CSG = csgObject(p);
-    d=unionS(CSG,d);
-
-    Surface rCone;
-    rCone.d = roundConeDist2(p-vec3( -3.0,0.5, 4.0), vec3(0.1,0.0,0.0), vec3(0.1,2.35,0.1), 0.45, 0.15);
-    rCone.color = vec3(0.1,0.6,0.7); rCone.Ka=0.2; rCone.Kd=0.4;rCone.Ks=0.4;
-    d=unionS(rCone,d);
-
-    Surface OctPrism;
-    OctPrism.d = octogonPrismDist(p-vec3( 3.0,0.8,5.0), 0.7, 0.25);
-    OctPrism.color = vec3(0.4,0.2,0.7); OctPrism.Ka=0.2; OctPrism.Kd=0.7;OctPrism.Ks=0.1;
-    d=unionS(OctPrism,d);*/
-
     Surface d = Surface(MAX_DIST+1, vec3(0,0,0), 0,0,0);
 
 /*    Surface plane;
@@ -971,9 +1023,33 @@ Surface getDist(vec3 p)
     Surface rings = subtractionS(outerRing, innerRing);
 
 
-    vec3 crystalPosition = vec3(2,0,4);
+    vec3 claw_position = vec3(0,1,6);
+    Surface claw = miningClaw(p, claw_position, 0.5, rotX(0), rotY(0),rotY(0), rotY(0),1);
+    return claw;
 
-   // Surface c1 = crystalRock(p , crystalPosition, vec3(0.16,0.48,0.84) ,0.9, rotY(30*iTime));
+    vec3 crystal_position = vec3(0,3,0);
+    mat4 crystal_rotation = rotY(30*iTime);
+    float crystal_scale = 0.5;
+
+    Surface CRYSTAL_BOUNDING_SPHERE = Surface( sphereDist(p, crystal_position, 1.8*crystal_scale), vec3(0,0,1),1,1,1 );
+
+
+
+
+    if(CRYSTAL_BOUNDING_SPHERE.d <= EPSILON){
+        Surface c1 = crystalRock(p , crystal_position, vec3(0.16,0.48,0.84) ,crystal_scale, crystal_rotation);
+      //  d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
+        d = unionS(d, c1);
+    }else{
+        d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
+
+    }
+    
+
+
+
+
+
 
     /*vec3 missilePosition = vec3(0,3.5,4);
     float radius = 0.3;
@@ -987,7 +1063,7 @@ Surface getDist(vec3 p)
     vec3 spaceship_position = vec3(1,0,5);
     mat4 spaceship_rotation = rotX(30*iTime);
     float spaceship_scale = 0.2;
-    mat4 scopeRotation = rotY(30);
+    mat4 scopeRotation = rotY(0);
 
 
     Surface SPACESHIP_BOUNDING_SPHERE = Surface( sphereDist(p, spaceship_position, 10*spaceship_scale), vec3(0,0,1),1,1,1 );
@@ -996,7 +1072,7 @@ Surface getDist(vec3 p)
 
     if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON){
         Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
-        d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
+    //    d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
         d = unionS(d, spaceship);
     }else{
         d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
@@ -1053,7 +1129,7 @@ Surface getDist(vec3 p)
     d = unionS(d, spaceship);
     d = unionS(d, planet);
     d = unionS(d, rings);   
-    d = unionS(d, c1);
+  
 
     return d;*/
 }
@@ -1090,32 +1166,41 @@ vec3 estimateNormal(vec3 p)
 }
 
 
-
+//!DEBUGMODE
 
 vec3  getLight(vec3 p,vec3 CamPos, Surface s) {
-    vec3 lightPos =vec3(10.0,10.0,-10.0);
-    float dl = length(lightPos);
-    vec3 lightColor = vec3 (1.0);
-  //  float w=2.0*PI*iTime*0.15;
-//    lightPos.xz=dl*vec2(cos(w),sin(w))*0.5;
+    vec3 lightPos = vec3(10.0,10.0,-10.0);
+    vec3 lightColor = vec3(1.0);
 
     vec3 ld = lightPos-p;
-    float fat = 1/length(ld);
-    vec3 l = fat*ld;
+    float lightDistance = length(ld);
+    float fat  =1/lightDistance;
+    vec3 l = ld*fat;
+
     vec3 n = estimateNormal(p);
-    float dif = dot(n, l);
 
-    vec3 col= s.color*s.Ka;
+    float dif = max(dot(n,l),0.0);
+    // ambient
+    vec3 col = s.color*s.Ka;
+    // diffuse
+    col += s.color*s.Kd*dif*(20.0*fat);
 
-    col+= s.color*s.Kd*dif*fat*20.0;
-    vec3 eye = normalize(p-CamPos);
-    vec3 R = normalize(reflect(n,l));
-    float phi=dot(eye,R);
-    if(phi>0.0)
-        col+= s.Ks*lightColor*pow(phi,5.0);
-    Surface sd = rayMarching(p+200.0*n*SURF_DIST, l);
-    if(sd.d<length(lightPos-p)) col *= .25;
+    float cameraDistance = length(p-CamPos);
 
+    if(cameraDistance <= 15.0 && !DEBUGMODE){
+        // Specular:
+        vec3 eye = normalize(CamPos-p);
+        vec3 R = reflect(-l,n);
+
+        float phi = max(dot(eye,R),0.0);
+        col += s.Ks*lightColor*pow(phi,5.0);
+
+        // Shadow ray
+        
+        Surface sd = rayMarching(p+n*2.0*SURF_DIST,l);
+        if(sd.d < lightDistance)
+            col *= 0.25;
+    }
     return col;
 }
 
@@ -1179,7 +1264,7 @@ void main()
  //  vec3 col = spaceTexture(p+vec2(0.5,0.5));
 
     Surface s = rayMarching(CAMERA,rd);
-    if(s.d<MAX_DIST)
+    if(s.d<MAX_DIST )
     {
         vec3 po= CAMERA+s.d*rd;
          col= getLight(po,CAMERA,s);
