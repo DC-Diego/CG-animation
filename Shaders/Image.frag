@@ -108,7 +108,6 @@ float asteroidDist(vec3 p, vec3 center, float r, float seed)
     float y = n.y;
     float z = n.z;
 
-
     float shape =
         0.10 * cos(5.0*x + seed) *
               sin(4.0*y + seed*0.7) +
@@ -608,15 +607,14 @@ Surface Missile(vec3 p, vec3 missilePosition, float radius, float s, mat4 t)
     q = opTransf(q, inverse(t));
     q = opTransf(q, rotX(90));
 
+
+    float bound = cylinderVerticalDist(q, vec2(radius*1.5,2))*s;
+
+    if(bound > EPSILON) return Surface(bound, vec3(0), 0.0, 0.0, 0.0);
+
     // Warhead
     Surface warhead = Surface(
-        roundConeDist2(
-            q - vec3(0,1.2,0),
-            vec3(0,0.4,0),
-            vec3(0,0,0),
-            radius*0.82,
-            radius
-        ) * s,
+        roundConeDist2(q - vec3(0,1.2,0),vec3(0,0.4,0),vec3(0,0,0), radius*0.82,radius) * s,
         vec3(0.9,0,0), 0.1,1,1
     );
 
@@ -669,28 +667,16 @@ Surface Gun(vec3 p, vec3 position, float scale)
 
     // Barrel
     Surface barrel = Surface(
-        cylinderVerticalDist(
-            opTransf(p-vec3(0,0,-0.8), rotX(90)),
-            vec2(0.16, 0.9)
-        ),
-        vec3(0.18), 0.2, 0.8, 2.0
-    );
+        cylinderVerticalDist(opTransf(p-vec3(0,0,-0.8), rotX(90)),vec2(0.16, 0.9)),
+        vec3(0.18), 0.2, 0.8, 2.0);
 
     Surface body = Surface(
-        roundConeDist2(
-            p-vec3(0,0,0.2),
-            vec3(0.0,0.0,0.0),
-            vec3(00,0.0,1),
-            0.2,0.4
-        ),
+        roundConeDist2(p-vec3(0,0,0.2),vec3(0.0,0.0,0.0),vec3(00,0.0,1),0.2,0.4),
         vec3(0.93,0.0,0.19), 0.2, 0.8, 1.0
     );
 
     Surface shooter = Surface(
-        cylinderVerticalDist(
-            opTransf(p-vec3(0,0,-1.7), rotX(90)),
-            vec2(0.21,0.12)
-        ),vec3(0.08), 0.2, 0.5, 5.0);
+        cylinderVerticalDist(opTransf(p-vec3(0,0,-1.7), rotX(90)), vec2(0.21,0.12)),vec3(0.08), 0.2, 0.5, 5.0);
 
     Surface gun = unionS(unionS(body, barrel), shooter);
 
@@ -883,9 +869,6 @@ Surface miningClaw(vec3 p, vec3 position, float s, mat4 t, mat4 angle1, mat4 ang
 }
 
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
-    // View spaceship
-
-
     p = opTransf(p-position, inverse(t))  / s+position;
 
     Surface hull = Surface(
@@ -991,14 +974,10 @@ Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     result.d *= s;
 
     return result;
-    // return unionS(visor, hull);
-
 }
 
 
 Surface simpleAsteroid(vec3 p, vec3 position, float r, mat4 t, vec3 rockColor) {
-
-
     Surface ASTEROID_BOUNDING_SPHERE = Surface(sphereDist(p,position,1.2*r), vec3(0),0,0,0);
     
     if(ASTEROID_BOUNDING_SPHERE.d > EPSILON){
@@ -1067,13 +1046,8 @@ Surface simpleAsteroid(vec3 p, vec3 position, float r, mat4 t, vec3 rockColor) {
 
 
 Surface MainAsteroid(vec3 p, vec3 position, float r, mat4 t){
-
     vec3 c = opTransf(p-position, inverse(t)) ;
-    
-
     Surface mainAsteroid = simpleAsteroid(p,position, r*(1),t , vec3(0.20, 0.19, 0.17));
-
-
 
     return mainAsteroid;
 }
@@ -1082,29 +1056,19 @@ Surface getDist(vec3 p)
 {
     Surface d = Surface(MAX_DIST+1, vec3(0,0,0), 0,0,0);
 
-/*    Surface plane;
-    plane.d = planeDist(p,vec3(0,1,0),0.0);
-    plane.color = vec3(0.9,0.9,0.9);
-    plane.Ka = 0.1;
-    plane.Kd = 0.1;
-    plane.Ks = 0.8;*/
-
-
     Surface asteroid = simpleAsteroid(p, vec3(5,0,10), 0.8, rotY(32),vec3(0.20, 0.19, 0.17));
     Surface asteroid2 = simpleAsteroid(p, vec3(-5,5,10), 0.8, rotY(32*2),vec3(0.21, 0.19, 0.23));
     Surface asteroid3 = simpleAsteroid(p, vec3(-5,0,15), 0.8, rotY(32*3),vec3(0.24, 0.12, 0.17));
     Surface asteroid4 = simpleAsteroid(p, vec3(5,2,12), 0.8, rotY(32*4) ,vec3(0.14, 0.1, 0.07));
     Surface asteroid5 = simpleAsteroid(p, vec3(3,-2,14), 0.8, rotY(32*5),vec3(0.20, 0.09, 0.17));
 
-
-    Surface sun = Surface( sphereDist(p,vec3(15,5,30),3), vec3(1,0.9,0),1,1,0);
+    //Surface sun = Surface( sphereDist(p,vec3(15,5,30),3), vec3(1,0.9,0),1,1,0);
 
     Surface planet;
     vec3 planetPosition = vec3(0,0,15);
     vec3 rotatedToPlanet = opTransf(p-planetPosition, rotY(30.*iTime)* rotZ(-15.));
     planet.d = sphereDist(p, planetPosition, 2);
     planet.color = planetTexture(toPlanetUV(normalize(rotatedToPlanet)   ));
-    //planet.color = vec3(0.4,0.2,0.9);
     planet.Ka = 0.15; planet.Kd = 0.8; planet.Ks = 0.05;
 
 
@@ -1114,47 +1078,24 @@ Surface getDist(vec3 p)
 
     Surface rings = subtractionS(outerRing, innerRing);
 
-
     d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));
     mat4 asteroid_rotation = rotY(iTime*30);
     Surface mainAst = MainAsteroid(p, vec3(0,0,10), 2, asteroid_rotation);
     d= unionS(d, mainAst);
-    return d;
-
-   
+     
     vec3 crystal_position = vec3(0,3,0);
     mat4 crystal_rotation = rotY(30*iTime);
     float crystal_scale = 0.25;
 
     Surface CRYSTAL_BOUNDING_SPHERE = Surface( sphereDist(p, crystal_position, 1.8*crystal_scale), vec3(0,0,1),1,1,1 );
 
-
-
-
     if(CRYSTAL_BOUNDING_SPHERE.d <= EPSILON ){
         Surface c1 = crystalRock(p , crystal_position, vec3(0.16,0.48,0.84) ,crystal_scale, crystal_rotation);
-      //  d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
         d = unionS(d, c1);
     }else{
         d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
-
     }
     
-
-
-
-
-
-
-    /*vec3 missilePosition = vec3(0,3.5,4);
-    float radius = 0.3;
-    d = Missile(p, missilePosition, radius, 0.5, rotX(0));*/
-
-  /*  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));*/
-  
-
-
-
     vec3 spaceship_position = vec3(1,0,5);
     mat4 spaceship_rotation = rotX(30*iTime);
     float spaceship_scale = 0.3;
@@ -1163,32 +1104,21 @@ Surface getDist(vec3 p)
 
     Surface SPACESHIP_BOUNDING_SPHERE = Surface( sphereDist(p, spaceship_position, 10*spaceship_scale), vec3(0,0,1),1,1,1 );
 
-
-
     if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON ){
         Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
-
-    //    d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
         d = unionS(d, spaceship);
         return d;
     }else{
         d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
-
-
     }
 
-
-
     vec3 enemy_position = vec3(-4,0,5);
-    mat4 enemyRotation = rotX(30*iTime);
+    mat4 enemyRotation = rotX(30);
     float enemyScale = 0.4;
-
 
     Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemyScale ), vec3(0,0,1), 1,1,1);
 
-    
-//    d = unionS(sun, ENEMY_BOUND_SPHERE);
-    if( ENEMY_BOUND_SPHERE.d  <= (0+EPSILON) ){
+    if( ENEMY_BOUND_SPHERE.d  <= (EPSILON) ){
         Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
 
         vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
@@ -1202,30 +1132,19 @@ Surface getDist(vec3 p)
         Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
         Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
 
-//        d = unionS(ENEMY_BOUND_SPHERE,d);
-      //  d = enemy;
-  d = unionS(d, enemy);
+        d = unionS(d, enemy);
         d = unionS(d, missile1);
         d = unionS(d, missile2);
     }else{
         d = unionS(ENEMY_BOUND_SPHERE,d);
-        
     }
 
 //    Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
    
-    d = unionS(sun,d);
-
-  
-
-    return d;
-/*
-    d = unionS(d, spaceship);
+   // d = unionS(sun,d);
     d = unionS(d, planet);
     d = unionS(d, rings);   
-  
-
-    return d;*/
+    return d;
 }
 
 
@@ -1253,9 +1172,9 @@ vec3 estimateNormal(vec3 p)
 {
     Surface sd= getDist(p);
 
-    float dx =  getDist(vec3(p.x+EPSILON,p.y,p.z)).d-sd.d;
-    float dy = getDist(vec3(p.x,p.y+EPSILON,p.z)).d-sd.d;
-    float dz = getDist(vec3(p.x,p.y,p.z+EPSILON)).d-sd.d;
+    float dx =  getDist(vec3(p.x+EPSILON*0.1,p.y,p.z)).d-sd.d;
+    float dy = getDist(vec3(p.x,p.y+EPSILON*0.1,p.z)).d-sd.d;
+    float dz = getDist(vec3(p.x,p.y,p.z+EPSILON*0.1)).d-sd.d;
     return normalize(vec3(dx,dy,dz));
 }
 
@@ -1315,9 +1234,15 @@ vec3 spaceTexture(vec2 uv){
 
     float d = length(center);
 
-        
 
-    return mix(background2, background, d)*0.5;
+    background = mix(background2, background, d)*0.5;
+    vec2 sun = uv-vec2(0.65,0);
+    sun.y = sun.y*0.5;
+    float sunRay = 0.01;
+    float l = length(sun);
+    vec3 sunColor = vec3(1,0.9,0.7);
+
+    return    l <= sunRay? vec3(1) : (background + sunColor*(1)/((l-sunRay)*100 ));
 
 
 
@@ -1340,9 +1265,9 @@ void main()
 
    
 
-    vec2 mo = iMouse.xy/iResolution.xy;
-    float am = mix(0.0,90.0,mo.x*iMouse.z);
-    float bm = mix(0.0,90.0,mo.y*iMouse.z);
+    vec2 mo = iMouse.xy/iResolution.xy+vec2(-0.5);
+    float am = mix(0.0,90.0,2*mo.x*iMouse.z);
+    float bm = mix(0.0,90.0,2*mo.y*iMouse.z);
 
     mat4 Mry = rotY(am);
     mat4 Mrx = rotX(bm);
@@ -1355,7 +1280,7 @@ void main()
     rd = Mc*rd;
 
     vec3 col = spaceTexture( toPlanetUV(rd));
- //  vec3 col = spaceTexture(p+vec2(0.5,0.5));
+    //vec3 col = spaceTexture(p+vec2(0.5,0.5));
 
     Surface s = rayMarching(CAMERA,rd);
     if(s.d<MAX_DIST )
@@ -1364,7 +1289,7 @@ void main()
          col= getLight(po,CAMERA,s);
     }
 
-    
+
     //col = mix(COLOR_BACKGROUND,col,f);
     //C = vec4( planetTexture(vec2(p.x+0.5,p.y+0.5)) , 1.0 );
     C = vec4( col, 1.0 );
