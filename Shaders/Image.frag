@@ -15,7 +15,7 @@ float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
 float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
-#define DEBUGMODE false
+#define DEBUGMODE true
 
 
 struct  Surface {
@@ -536,7 +536,11 @@ vec3 planetTexture(vec2 n)
 
     return color;
 }
-vec2 toPlanetUV(vec3 p){
+vec2 toPlanetUV(in vec3 p){
+    //     float u = dot(vec2(p.x,p.z), vec2(1,0))*0.5+0.5;
+    // float v = p.y;
+    // return vec2(u,v); 
+    
     float u = atan(p.z, p.x) / (2.0 * PI) + 0.5;
     float v = asin(clamp(p.y, -1.0, 1.0)) / PI + 0.5;
 
@@ -553,18 +557,6 @@ Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
     mainCrystal = unionS(mainCrystal, Surface(boxDist(q-vec3(0,-1,0), vec3(0.5,1,0.5)), color, 1,1,1));
     mainCrystal.d *= s;
     return mainCrystal;
-/*
-    Surface crystalTop = Surface(pyramidDist(q-vec3(0,1,0), 0.75)*s,
-        color, 0.25,0.8,0.9);
-
-    Surface crystalBody = Surface(
-        boxDist(q, vec3(0.5,1,0.5))*s,color, 0.25,0.8,0.9);
-
-    Surface crystalBottom = Surface(pyramidDist(opTransf(q-vec3(0,-1,0), rotX(180)),
-            1.75)*s,color, 0.2,0.8,0.2);
-
-    crystalBody = unionS(crystalTop, crystalBody);
-    return unionS(crystalBody, crystalBottom);*/
 }
 
 Surface crystalRock(vec3 p, vec3 position, vec3 color, float s, mat4 t)
@@ -1085,8 +1077,10 @@ Surface getDist(vec3 p)
 
 
     vec3 ringColor = vec3(0.75, 0.25, 0.9);
-    Surface outerRing = Surface( cylinderVerticalDist(rotatedToPlanet, vec2(6,0.01)), ringColor, 0.15, 0.8, 0.05);
-    Surface innerRing = Surface( cylinderVerticalDist(rotatedToPlanet, vec2(4,0.3)), ringColor, 0.15, 0.8, 0.05);
+
+    vec3 pl = opTransf(p - planetPosition, rotY(30.0*iTime) * rotZ(-15.0));
+    Surface outerRing = Surface(cylinderVerticalDist(pl, vec2(6,0.01)), ringColor, 0.15, 0.8, 0.05);
+    Surface innerRing = Surface(cylinderVerticalDist(pl, vec2(4,0.3)),  ringColor, 0.15, 0.8, 0.05);
 
     Surface rings = subtractionS(outerRing, innerRing);
 
@@ -1231,9 +1225,9 @@ vec3  getLight(vec3 p,vec3 CamPos, Surface s) {
 
 mat3 SetCamera(vec3 Look_at, vec3 CamPos)
 {
-    vec3 cd =normalize(Look_at-CamPos);
-    vec3 cv = cross(vec3(0.0,1.0,0.0),cd);
-    vec3 cu = cross(cd,cv);
+    vec3 cd = normalize(Look_at-CamPos);
+    vec3 cv = normalize(cross(vec3(0.0,1.0,0.0),cd));
+    vec3 cu = normalize(cross(cd,cv));
     return mat3(cv,cu,cd);
 }
 
@@ -1259,46 +1253,18 @@ float stars(vec2 uv)
     return brightness * (1.0 - smoothstep(0.0, size, d));
 }
 
+vec3 spaceTexture(vec3 rd){
+    vec3 sunDir = normalize(vec3(2, 0, 4));
+    vec3 sunColor = vec3(1.0, 0.9, 0.7);
 
-vec3 spaceTexture(vec2 uv){
-    
-    vec3 background = vec3(0.01,0.01,0.09);
-    vec3 background2 = vec3(0.09,0.01,0.09);
-    vec2 center = uv-vec2(0.5,0.5) ;
-
-    float d = length(center);
-
-
-    background = mix(background2, background, d)*0.5;
-    
-    //vec2 sun = uv-vec2(0.65,0);
-    vec2 sun = uv-vec2(0.7,0.5);
-
-    float s = stars(uv);
-    background += vec3(s);
-    
-    float nebula = sin(uv.x * 8.0 + uv.y * 5.0)
-                * cos(uv.y * 12.0 - uv.x * 3.0);
-
-    vec3 nebulaColor = vec3(0.8, 0.02, 0.65);
-    background += nebulaColor * max(nebula, 0.0) * 0.15;
-
-    sun.y = sun.y*0.5;
-    float sunRay = 0.005;
-    float l = length(sun);
-    vec3 sunColor = vec3(1,0.9,0.7);
-
-    return    l <= sunRay? vec3(1) : (background + sunColor*(1)/((l-sunRay)*500 ));
-
-
-
-
+    float s = max(dot(rd, sunDir), 0.0);
+    vec3 bg = mix(vec3(0.09,0.01,0.09), vec3(0.01,0.01,0.09), rd.y*0.5+0.5) * 0.5;
+    return bg + sunColor * ( pow(s,800)   * 2.0 + pow(s, 20.0) * 0.15);
 }
-
 void main()
 {
     vec2 p = (gl_FragCoord.xy-0.5*iResolution)/iResolution.y;
-  
+
     vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0);
     vec3 Target = vec3 (0.0,1,10); // CAM TARGET
     Target = vec3(0,0,6);
@@ -1309,7 +1275,7 @@ void main()
 
 //    vec3 col = mix(vec3 (.01,0.1,0.1),COLOR_BACKGROUND,-p.y*0.2);
 
-   
+
 
     vec2 mo = iMouse.xy/iResolution.xy+vec2(-0.5);
     float am = mix(0.0,90.0,2*mo.x*iMouse.z);
@@ -1325,7 +1291,13 @@ void main()
     mat3 Mc = SetCamera( Target  ,CAMERA);
     rd = Mc*rd;
 
-    vec3 col = spaceTexture( toPlanetUV(normalize(rd)));
+
+    vec3 rdBefore = rd;
+
+
+
+
+     vec3 col = spaceTexture( rd);
     //vec3 col = spaceTexture(p+vec2(0.5,0.5));
     //vec3 col = planetTexture(p+vec2(0.5,0.5));
 
@@ -1339,6 +1311,7 @@ void main()
 
     //col = mix(COLOR_BACKGROUND,col,f);
     //C = vec4( planetTexture(vec2(p.x+0.5,p.y+0.5)) , 1.0 );
-    C = vec4( col, 1.0 );
+
+     C = vec4( col, 1.0 );
 }
 
