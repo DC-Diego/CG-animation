@@ -15,7 +15,7 @@ float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
 float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
-#define DEBUGMODE true
+#define DEBUGMODE false
 
 
 struct  Surface {
@@ -512,24 +512,35 @@ Surface csgObject(vec3 p)
     R = subtractionS(R,S);
     return R;
 }
+vec3 planetTexture(vec2 n)
+{
+    float u = n.x;
+    float v = n.y;
+    float factor  = 5;
+    float fx = 2;
 
-vec3 planetTexture(vec2 n) {
-
-    vec3 background = 0.9*vec3(0.4 +0.6*(1-(n.y+0.5)), 0.5*((n.y+0.5)), 1);
-
-    float listras = 0.1*(n.y-(cos(n.y*PI*10    )*0.5+0.5));
-
-    float shadow = cos(n.x*PI*2)*0.4+0.3;
+    float x = v*PI*2;
+    float dist = length(vec2(u-0.7,v-0.7));
+    float tempest = dist< 0.05? sin(dist*PI*100)*0.5+0.5:0 ;
 
 
-    return background+vec3(listras*shadow);
+    float b = clamp((sin(x*8)+sin(x*4)+sin(x*2)+sin(x))*0.4+0.4,0,1);
+    float r =tempest*0.2; 
+    float g =b*0.7;
+
+    b =  b +(1-b)*0.1+tempest*0.2;
+
+
+
+    vec3 color = vec3(r,g,b);
+
+    return color;
 }
-
 vec2 toPlanetUV(vec3 p){
-    float u = dot(vec2(p.x,p.z), vec2(1,0))*0.5+0.5;
-    float v = p.y;
-    return vec2(u,v);
+    float u = atan(p.z, p.x) / (2.0 * PI) + 0.5;
+    float v = asin(clamp(p.y, -1.0, 1.0)) / PI + 0.5;
 
+    return vec2(u, v);
 }
 
 Surface crystal(vec3 p, vec3 crystalPosition, vec3 color, float s, mat4 t)
@@ -1059,10 +1070,18 @@ Surface getDist(vec3 p)
 
     Surface planet;
     vec3 planetPosition = vec3(0,0,15);
-    vec3 rotatedToPlanet = opTransf(p-planetPosition, rotY(30.*iTime)* rotZ(-15.));
-    planet.d = sphereDist(p, planetPosition, 2);
-    planet.color = planetTexture(toPlanetUV(normalize(rotatedToPlanet)   ));
-    planet.Ka = 0.15; planet.Kd = 0.8; planet.Ks = 0.05;
+
+    vec3 planetLocal = normalize(p - planetPosition);
+
+    // Rotação da textura
+    vec3 rotatedToPlanet = opTransf(
+        planetLocal,
+        rotY(30.0*iTime) * rotZ(-15.0)
+    );
+
+    planet.d = sphereDist(p, planetPosition, 2.0);
+    planet.color = planetTexture(toPlanetUV(rotatedToPlanet));
+    planet.Ka = 0.015; planet.Kd = 0.5; planet.Ks = 0.15;
 
 
     vec3 ringColor = vec3(0.75, 0.25, 0.9);
@@ -1175,8 +1194,8 @@ vec3 estimateNormal(vec3 p)
 //!DEBUGMODE
 
 vec3  getLight(vec3 p,vec3 CamPos, Surface s) {
-    vec3 lightPos = vec3(10.0,10.0,-10.0);
-    vec3 lightColor = vec3(1.0);
+    vec3 lightPos = vec3(10.0,10.0,-10.0)*cos(iTime);
+    vec3 lightColor = vec3(1,0.9,0.7);
 
     vec3 ld = lightPos-p;
     float lightDistance = length(ld);
@@ -1219,8 +1238,30 @@ mat3 SetCamera(vec3 Look_at, vec3 CamPos)
 }
 
 
+float stars(vec2 uv)
+{
+    vec2 grid = uv * vec2(250.0, 125.0);
+    vec2 id = floor(grid);
+    vec2 f = fract(grid);
+
+    float h = fract(sin(dot(id, vec2(127.1, 311.7))) * 4358.5453);
+
+    vec2 starPos = vec2(
+        fract(h * 17.13),
+        fract(h * 31.71)
+    );
+
+    float d = length(f - starPos);
+
+    float size = mix(0.015, 0.045, fract(h * 13.7))*2;
+    float brightness = step(0.992, h);
+
+    return brightness * (1.0 - smoothstep(0.0, size, d));
+}
+
 
 vec3 spaceTexture(vec2 uv){
+    
     vec3 background = vec3(0.01,0.01,0.09);
     vec3 background2 = vec3(0.09,0.01,0.09);
     vec2 center = uv-vec2(0.5,0.5) ;
@@ -1229,13 +1270,25 @@ vec3 spaceTexture(vec2 uv){
 
 
     background = mix(background2, background, d)*0.5;
-    vec2 sun = uv-vec2(0.65,0);
+    
+    //vec2 sun = uv-vec2(0.65,0);
+    vec2 sun = uv-vec2(0.7,0.5);
+
+    float s = stars(uv);
+    background += vec3(s);
+    
+    float nebula = sin(uv.x * 8.0 + uv.y * 5.0)
+                * cos(uv.y * 12.0 - uv.x * 3.0);
+
+    vec3 nebulaColor = vec3(0.8, 0.02, 0.65);
+    background += nebulaColor * max(nebula, 0.0) * 0.15;
+
     sun.y = sun.y*0.5;
-    float sunRay = 0.01;
+    float sunRay = 0.005;
     float l = length(sun);
     vec3 sunColor = vec3(1,0.9,0.7);
 
-    return    l <= sunRay? vec3(1) : (background + sunColor*(1)/((l-sunRay)*100 ));
+    return    l <= sunRay? vec3(1) : (background + sunColor*(1)/((l-sunRay)*500 ));
 
 
 
@@ -1272,8 +1325,9 @@ void main()
     mat3 Mc = SetCamera( Target  ,CAMERA);
     rd = Mc*rd;
 
-    vec3 col = spaceTexture( toPlanetUV(rd));
+    vec3 col = spaceTexture( toPlanetUV(normalize(rd)));
     //vec3 col = spaceTexture(p+vec2(0.5,0.5));
+    //vec3 col = planetTexture(p+vec2(0.5,0.5));
 
     Surface s = rayMarching(CAMERA,rd);
     if(s.d<MAX_DIST )
