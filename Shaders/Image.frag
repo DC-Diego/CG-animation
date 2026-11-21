@@ -661,10 +661,10 @@ Surface Missile(vec3 p, vec3 missilePosition, float radius, float s, mat4 t)
 
     return missile;
 }
-Surface Gun(vec3 p, vec3 position, float scale)
+Surface Gun(vec3 p, vec3 position, float s)
 {
-    p = (p - position) / scale;
-
+    p = (p - position) / s;
+    
     // Barrel
     Surface barrel = Surface(
         cylinderVerticalDist(opTransf(p-vec3(0,0,-0.8), rotX(90)),vec2(0.16, 0.9)),
@@ -680,7 +680,8 @@ Surface Gun(vec3 p, vec3 position, float scale)
 
     Surface gun = unionS(unionS(body, barrel), shooter);
 
-    gun.d *= scale;
+  //  gun = unionS(gun, Surface(bound, vec3(0), 0.0, 0.0, 0.0) );
+    gun.d *= s;
     return gun;
 }
 Surface Bullet(vec3 p, vec3 position, float scale, mat4 t){
@@ -778,7 +779,6 @@ Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
 
 
 Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
-
     p = opTransf(p, inverse(t));
 
     Surface haste = Surface( cylinderVerticalDist( p-position-vec3(0,1,0),vec2(0.08,1.1)), vec3(0.2), 0.2,0.5,1);
@@ -792,18 +792,11 @@ Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
     Surface tubeDetail2 = Surface(   cylinderVerticalDist(  opTransf(q-position-vec3(0,2.2,0.7),rotX(90)) , vec2(0.22,0.15)),spaceship_color, 0.2, 0.5, 0.9 );
     Surface view = Surface( sphereDist( q,position+vec3(0,2.2,-1.4),0.2), vec3(0,0,0.1), 0.0,0.25,2);
 
-
-
-
     mainTube = unionS(mainTube, unionS(tubeDetail, tubeDetail2));
     mainTube = unionS(mainTube, view);
 
-
     haste = unionS(haste, support);
-    
-
     return unionS(mainTube, haste);
-
 }
 
 
