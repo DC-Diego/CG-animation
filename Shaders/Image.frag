@@ -10,6 +10,7 @@ out vec4 C;
 #define MAX_DIST 150.
 #define SURF_DIST .01
 #define EPSILON .01
+#define toDegrees 180/PI
 #define PI 3.14159265359
 float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
@@ -28,6 +29,10 @@ float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 int SCENE_MODE = AMBIENT_SCENE;
 
 vec3 SUN_POSITION = vec3(1, 0, 4);
+
+
+
+
 
 
 struct  Surface {
@@ -93,6 +98,30 @@ mat4 rotZ (in float angle)
     return mat;
 }
 
+
+// CRYSTAL PROPS:
+    vec3 crystal_position = vec3(0,3,0);
+    mat4 crystal_rotation = rotY(0);
+    float crystal_scale = 0.25;
+
+// SPACESHIP PROPS:
+    vec3 spaceship_position = vec3(1,0,5);
+    mat4 spaceship_rotation = rotY(0);
+    float spaceship_scale = 0.3;
+
+// SCOPE PROPS:
+    mat4 scopeRotation = rotY(0);
+
+// ENEMY PROPS:
+    vec3 enemy_position = vec3(-4,0,5);
+    mat4 enemyRotation = rotY(0);
+    float enemyScale = 0.4;
+
+
+
+
+
+
 // Tarefa
 
 //Operaçoes  de translação
@@ -103,6 +132,29 @@ vec3 opTransf (vec3 p, mat4 m)
 {
     return vec4 (m * vec4 (p, 1.)).xyz;
 }
+
+
+mat4 findRotation(vec3 f, bool projectMinusZ){
+   float Oy = atan(f.x, f.z)*toDegrees;
+
+   vec3 U = (rotY(-Oy) * vec4(f, 0.0)).xyz;
+
+   float Ox = atan(U.y, U.z)*toDegrees;
+
+   vec3 rotation = vec3(Ox, Oy, 0.0);
+    if (projectMinusZ)
+    {
+        Oy += 180.0;
+    }
+   mat4 R = rotY(Oy) * rotX(Ox);
+   return R;
+}
+
+
+
+
+
+
 float sphereDist(vec3 p, vec3 ce, float r)
 {
     vec3 c = p-ce;
@@ -787,6 +839,7 @@ Surface Enemy(vec3 p, vec3 position, mat4 t, float scale){
 
 Surface getScope(vec3 p, vec3 position, mat4 t, mat4 scopeRot){
     p = opTransf(p, inverse(t));
+   
 
     Surface haste = Surface( cylinderVerticalDist( p-position-vec3(0,1,0),vec2(0.08,1.1)), vec3(0.2), 0.2,0.5,1);
     Surface support = Surface( sphereDist( p,position+vec3(0,2,0),0.12), spaceship_color, 0.2,0.5,1);
@@ -870,7 +923,6 @@ Surface miningClaw(vec3 p, vec3 position, float s, mat4 t, mat4 angle1, mat4 ang
 
 Surface Spaceship(vec3 p, vec3 position, mat4 t, mat4 scopeRotation, float s){
     p = opTransf(p-position, inverse(t))  / s+position;
-
     Surface hull = Surface(
         boxDist(p-position, vec3(1.5,1.5,3)),
         vec3(0.2),
@@ -1052,60 +1104,67 @@ Surface MainAsteroid(vec3 p, vec3 position, float r, mat4 t){
     return mainAsteroid;
 }
 
+
+
+
+
 Surface getDist(vec3 p)
 {
     Surface d = Surface(MAX_DIST+1, vec3(0,0,0), 0,0,0);
-
-
-    //AMBIENT
-
-
-    vec3 ringColors[5] = vec3[](
-        vec3(0.32, 0.52, 0.72), // Ocean blue
-        vec3(0.65, 0.87, 0.88), // Ice cyan
-        vec3(0.57, 0.48, 0.77), // Lavender
-        vec3(0.78, 0.55, 0.77), // Dusty rose
-        vec3(0.85, 0.75, 0.95)  // Pale gold
-    );
-
-    vec3 planetPosition = vec3(-30,-20,80);
-    vec3 planetLocal = normalize(p - planetPosition);
-    vec3 rotatedToPlanet = opTransf(planetLocal,rotY(30.0*iTime) * rotZ(-15.0));
-    
-    
-    //vec3 ringColor = vec3(0.58, 0.38, 0.72);
-    
-    int colorId =int(clamp((length(p-planetPosition)-32)/16,0,1)*5);
-    vec3 ringColor = ringColors[colorId  ];
-    
-    
-    
+    vec3 planetPosition = vec3(-30*cos(iTime*1),-20,80);
     float planetScale = 8;
-    vec3 pl = opTransf(p - planetPosition, rotY(30.0*iTime) * rotZ(-15.0));
+    vec3 planetLocal = normalize(p - planetPosition);
+    vec3 rotatedToPlanet = opTransf(planetLocal,rotY(3.0*iTime) * rotZ(-15.0));
+    
+    if(SCENE_MODE >= AMBIENT_SCENE && false){
+        //AMBIENT
+        vec3 ringColors[5] = vec3[](
+            vec3(0.32, 0.52, 0.72), // Ocean blue
+            vec3(0.65, 0.87, 0.88), // Ice cyan
+            vec3(0.57, 0.48, 0.77), // Lavender
+            vec3(0.78, 0.55, 0.77), // Dusty rose
+            vec3(0.85, 0.75, 0.95)  // Pale gold
+        );
 
-    Surface asteroid  = simpleAsteroid(p, vec3(-4,3, 3 ), 0.8, rotY(32+iTime), vec3(0.32, 0.33, 0.35));
-    Surface asteroid2 = simpleAsteroid(p, vec3(6,-1.5,5), 0.8, rotX(32-iTime), vec3(0.38, 0.34, 0.29));
-    Surface asteroid3 = simpleAsteroid(p, vec3(-2,0.1, 0.8  ), 1.2,rotZ(32*3-iTime), vec3(0.12, 0.12, 0.13));
-    // Surface asteroid4 = simpleAsteroid(p, vec3(5,2,12), 0.8, rotY(32*4) ,vec3(0.14, 0.1, 0.07));
-    // Surface asteroid5 = simpleAsteroid(p, vec3(3,-2,14), 0.8, rotY(32*5),vec3(0.20, 0.09, 0.17));
-    //Surface sun = Surface( sphereDist(p,vec3(15,5,30),3), vec3(1,0.9,0),1,1,0);
+       
+        
+        
+        //vec3 ringColor = vec3(0.58, 0.38, 0.72);
+        
+        int colorId =int(clamp((length(p-planetPosition)-32)/16,0,1)*5);
+        vec3 ringColor = ringColors[colorId  ];
+        
+        
+        
+        vec3 pl = opTransf(p - planetPosition, rotY(30.0*iTime) * rotZ(-15.0));
 
-//  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));
-    d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3,d)));
+        Surface asteroid  = simpleAsteroid(p, vec3(-4,3, 3 ), 0.8, rotY(32+iTime*2), vec3(0.32, 0.33, 0.35));
+        Surface asteroid2 = simpleAsteroid(p, vec3(8,-4.5,9), 0.7, rotX(32-iTime*2), vec3(0.38, 0.34, 0.29));
+        Surface asteroid3 = simpleAsteroid(p, vec3(-2,0.1, 0.8  ), 1.2,rotZ(32*3-2*iTime), vec3(0.12, 0.12, 0.13));
+        Surface asteroid4 = simpleAsteroid(p, vec3(13,3,20), 1.8, rotY(32*4-iTime*4) ,vec3(0.58, 0.56, 0.52));
+        Surface asteroid5 = simpleAsteroid(p, vec3(0,-2,22), 0.9, rotX(iTime*5), vec3(0.38, 0.34, 0.29));
+        Surface asteroid6 = simpleAsteroid(p, vec3(18,-4.5,40), 1.7, rotZ(32-iTime*2), vec3(0.34, 0.29,0.38));
+        //Surface sun = Surface( sphereDist(p,vec3(15,5,30),3), vec3(1,0.9,0),1,1,0);
+
+    //  d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, asteroid5))));
 
 
-    Surface planet = Surface(sphereDist(p, planetPosition, 2*planetScale),planetTexture(toPlanetUV(rotatedToPlanet)), 0.15, 0.7, 0.15);
 
-    Surface outerRing = Surface(cylinderVerticalDist(pl, vec2(6,0.01)*planetScale), ringColor, 0.15, 0.8, 0.05);
-    Surface innerRing = Surface(cylinderVerticalDist(pl, vec2(4,0.3)*planetScale),  ringColor, 0.15, 0.8, 0.05);
-    Surface rings = subtractionS(outerRing, innerRing);
+        Surface outerRing = Surface(cylinderVerticalDist(pl, vec2(6,0.01)*planetScale), ringColor, 0.15, 0.8, 0.05);
+        Surface innerRing = Surface(cylinderVerticalDist(pl, vec2(4,0.3)*planetScale),  ringColor, 0.15, 0.8, 0.05);
+        Surface rings = subtractionS(outerRing, innerRing);
 
-    mat4 asteroid_rotation = rotY(iTime*30);
-    Surface mainAst = MainAsteroid(p, vec3(5,0,60), 2, asteroid_rotation);
-     
-    vec3 crystal_position = vec3(0,3,0);
-    mat4 crystal_rotation = rotY(30*iTime);
-    float crystal_scale = 0.25;
+        mat4 asteroid_rotation = rotY(iTime*30);
+        Surface mainAst = MainAsteroid(p, vec3(5,0,50), 4, asteroid_rotation);
+
+
+
+        d = unionS(d, mainAst);
+        d = unionS(d, rings);   
+        d = unionS(asteroid, unionS(asteroid2, unionS(asteroid3, unionS(asteroid4, unionS(asteroid5,unionS(asteroid6,d))))));
+    }
+        Surface planet = Surface(sphereDist(p, planetPosition, 2*planetScale),planetTexture(toPlanetUV(rotatedToPlanet)), 0.15, 0.7, 0.15);
+        d = unionS(d, planet);
 
     Surface CRYSTAL_BOUNDING_SPHERE = Surface( sphereDist(p, crystal_position, 1.8*crystal_scale), vec3(0,0,1),1,1,1 );
     if(SCENE_MODE >= EXTRACTION_SCENE){
@@ -1115,17 +1174,15 @@ Surface getDist(vec3 p)
         }else{
             d = unionS(d, CRYSTAL_BOUNDING_SPHERE);
         }
-    }
-    
-    vec3 spaceship_position = vec3(1,0,5);
-    mat4 spaceship_rotation = rotX(30*iTime);
-    float spaceship_scale = 0.3;
-    mat4 scopeRotation = rotY(0);
-
+    }  
 
     Surface SPACESHIP_BOUNDING_SPHERE = Surface( sphereDist(p, spaceship_position, 10*spaceship_scale), vec3(0,0,1),1,1,1 );
-    if(SCENE_MODE >= PROTAGONIST_ARRIVE_SCENE){
+    if(SCENE_MODE >= PROTAGONIST_ARRIVE_SCENE*0){
         if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON){
+
+            spaceship_rotation = findRotation(planetPosition-spaceship_position, true);
+
+
             Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
             d = unionS(d, spaceship);
             return d;
@@ -1134,9 +1191,7 @@ Surface getDist(vec3 p)
         }
     }
 
-    vec3 enemy_position = vec3(-4,0,5);
-    mat4 enemyRotation = rotX(30);
-    float enemyScale = 0.4;
+
 
     Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemyScale ), vec3(0,0,1), 1,1,1);
 
@@ -1166,9 +1221,6 @@ Surface getDist(vec3 p)
 //    Surface bullet = Bullet(p, vec3(0,0,3),1,rotX(30*iTime));
    
    
-    d= unionS(d, mainAst);
-    d = unionS(d, planet);
-    d = unionS(d, rings);   
     return d;
 }
 
@@ -1283,9 +1335,9 @@ void main()
 {
     vec2 p = (gl_FragCoord.xy-0.5*iResolution)/iResolution.y;
 
-    vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0);
+    vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0+0*iTime*3);
     vec3 Target = vec3 (0.0,1,10); // CAM TARGET
-    Target = vec3(0,0,6);
+    Target = vec3(0,0,6+3*iTime*0);
 
 
     vec3 rd = normalize(vec3(p,1.2));
