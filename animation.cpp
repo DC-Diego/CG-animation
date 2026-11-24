@@ -37,7 +37,7 @@ static const std::vector<Keyframe> SP_KEYFRAMES = {
         glm::vec3(0),
         glm::vec3(-2.5f, -2, 10),
         6.0f,
-        EASE_INOUT,
+        LINEAR,
         false
     },
 
@@ -48,7 +48,7 @@ static const std::vector<Keyframe> SP_KEYFRAMES = {
         glm::vec3(0),
         glm::vec3(0, 2, 5),
         9.0f,
-        EASE_OUT,
+        LINEAR,
         false
     },
 
@@ -67,7 +67,7 @@ static const std::vector<Keyframe> SP_KEYFRAMES = {
         glm::vec3(0, 2, 4),
         glm::vec3(0, 0, 0),
         SPACESHIP_BASE_SCALE,
-        glm::vec3(0,2+EPSILON,4+EPSILON),
+        glm::vec3(-2.5,-3,2),
         glm::vec3(0, 5, 0),
         15.0f,
         EASE_OUT,
