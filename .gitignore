@@ -1,0 +1,8 @@
+# Qt Creator
+.qtcreator/
+
+# Build files
+build/
+
+# Dependencies / includes
+includes/

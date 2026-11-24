@@ -16,6 +16,13 @@ float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
 float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
+uniform vec3 spaceship_position;
+uniform mat4 spaceship_rotation;
+uniform float spaceship_scale;
+
+
+#define MAX_KEYFRAMES 50
+
 #define DEBUGMODE true
 
 #define AMBIENT_SCENE 0
@@ -25,14 +32,21 @@ float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 #define ESCAPE_SCENE 4
 #define END_SCENE 5
 
-
 int SCENE_MODE = AMBIENT_SCENE;
 
 vec3 SUN_POSITION = vec3(1, 0, 4);
 
 
-
-
+// struct Keyframe{
+//    vec3 position;
+//    vec3 rotation;
+//    float scale;
+//    vec3 forward;
+//    vec3 control;
+//    float time;
+//    int easingMode;
+//    bool isLinear;
+// } ;
 
 
 struct  Surface {
@@ -42,7 +56,10 @@ struct  Surface {
     float Kd;
     float Ks;
 };
-vec3 spaceship_color = vec3(0.3,0.5,1);
+
+
+
+
 
 const vec3 COLOR_BACKGROUND = vec3(0.25, 0.2, 0.22);
 
@@ -105,9 +122,10 @@ mat4 rotZ (in float angle)
     float crystal_scale = 0.25;
 
 // SPACESHIP PROPS:
-    vec3 spaceship_position = vec3(1,0,5);
-    mat4 spaceship_rotation = rotY(0);
-    float spaceship_scale = 0.3;
+    // vec3 spaceship_position = vec3(1,0,5);
+    // mat4 spaceship_rotation = rotY(0);
+    // float spaceship_scale = 0.3;
+    vec3 spaceship_color = vec3(0.3,0.5,1);
 
 // SCOPE PROPS:
     mat4 scopeRotation = rotY(0);
@@ -116,11 +134,6 @@ mat4 rotZ (in float angle)
     vec3 enemy_position = vec3(-4,0,5);
     mat4 enemyRotation = rotY(0);
     float enemyScale = 0.4;
-
-
-
-
-
 
 // Tarefa
 
@@ -134,41 +147,109 @@ vec3 opTransf (vec3 p, mat4 m)
 }
 
 
-mat4 findRotation(vec3 f, bool projectMinusZ){
-   float Oy = atan(f.x, f.z)*toDegrees;
+// mat4 findRotation(vec3 f, bool projectMinusZ){
+//     float Oy = atan(f.x, f.z)*toDegrees;
 
-   vec3 U = (rotY(-Oy) * vec4(f, 0.0)).xyz;
+//     vec3 U = (rotY(-Oy) * vec4(f, 0.0)).xyz;
 
-   float Ox = atan(U.y, U.z)*toDegrees;
+//     float Ox = atan(U.y, U.z)*toDegrees;
 
-   vec3 rotation = vec3(Ox, Oy, 0.0);
-    if (projectMinusZ)
-    {
-        Oy += 180.0;
-    }
-   mat4 R = rotY(Oy) * rotX(Ox);
-   return R;
-}
+//     vec3 rotation = vec3(Ox, Oy, 0.0);
+//     if (projectMinusZ)
+//     {
+//         Oy += 180.0;
+//     }
+//     mat4 R = rotY(Oy) * rotX(Ox);
+//     return R;
+// }
 
 
-vec3 interpolate(vec3 u, vec3 v, vec3 w, float t){
-  float a = 1-t;
-  return u*a*a+w*2*a*t+v*t*t;
 
-}
 
-float easeInOut(float t)
-{
-    return t * t * (3.0 - 2.0 * t);
-}
 
-float easeIn(float t) {
-    return t * t;
-}
+// Transform keyFrameHandler(Keyframe keyframes[MAX_KEYFRAMES], int keyframeCount, inout int t, bool minusZ){
+//     t = clamp(t, 0, keyframeCount-1);
 
-float easeOut(float t) {
-    return 1.0 - (1.0-t)*(1.0-t);
-}
+//     while(t < keyframeCount-1 &&
+//           iTime >= keyframes[t+1].time){
+//         t++;
+//     }
+
+//     if(t >= keyframeCount-1){
+//         Keyframe a = keyframes[keyframeCount-1];
+
+//         mat4 R = findRotation(a.forward, minusZ);
+//         R = rotX(a.rotation.x) *rotY(a.rotation.y) *rotZ(a.rotation.z) * R;
+//         return Transform(a.position, R, a.scale);
+//     }
+
+//     Keyframe a = keyframes[t];
+//     Keyframe b = keyframes[t+1];
+
+//     float start = a.time;
+//     float end = b.time;
+
+//     float t_i = clamp((iTime-start)/(end-start),0.0, 1.0);
+//     t_i = applyEasing(t_i, a.easingMode);
+//     float t_next = min(t_i + EPSILON, 1.0);
+
+//     vec3 position;
+//     vec3 next;
+
+//     if(a.isLinear){
+//         position = mix(a.position, b.position, t_i);
+//         next = mix(a.position, b.position, t_next);
+//     }else{
+//         position = interpolate(a.position, b.position, a.control, t_i);
+//         next = interpolate(a.position, b.position, a.control, t_next);
+//     }
+
+//     vec3 rotation = mix(a.rotation, b.rotation, t_i);
+
+//     float scale = mix(a.scale, b.scale, t_i);
+
+//     vec3 forward;
+
+//     if(dot(a.forward,a.forward) > EPSILON){
+//         forward = mix(a.forward, b.forward, t_i);
+//     }else{
+//         forward = next-position;
+//     }
+
+//     mat4 R = findRotation(forward, minusZ);
+//     R = rotX(rotation.x) *rotY(rotation.y) *rotZ(rotation.z) * R;
+
+//     return Transform(position, R, scale);
+// }
+
+// Keyframe SP_KEYFRAMES [MAX_KEYFRAMES];
+
+
+// int SP = 0;
+
+// void updateSpaceship(float iTime){
+// //   vec3 position;
+// //    vec3 rotation;
+// //    float scale;
+// //    vec3 forward;
+// //    vec3 control;
+// //    float time;
+// //    int easingMode;
+// //    bool isLinear;
+
+   
+    
+//     Transform transform = keyFrameHandler(SP_KEYFRAMES,5,SP,true);
+//     spaceship_position = transform.position;
+//     spaceship_rotation = transform.rotation;
+//     spaceship_scale = transform.scale;
+
+
+// }
+
+
+
+
 
 float sphereDist(vec3 p, vec3 ce, float r)
 {
@@ -1193,21 +1274,21 @@ Surface getDist(vec3 p)
     }  
 
 
-    float t_start = 2;
-    float t_end = 8;
+    // float t_start = 2;
+    // float t_end = 8;
     
-    if(iTime >= t_start &&  iTime <= t_end){
-       // float t_i = (iTime-t_start)/(t_end-t_start);
-        float t_i = clamp((iTime - t_start) / (t_end - t_start), 0.0, 1.0);
-        t_i = easeInOut(t_i);
+    // if(iTime >= t_start &&  iTime <= t_end){
+    //    // float t_i = (iTime-t_start)/(t_end-t_start);
+    //     float t_i = clamp((iTime - t_start) / (t_end - t_start), 0.0, 1.0);
+    //     t_i = easeInOut(t_i);
 
 
-        spaceship_position = interpolate(vec3(0,0,5), vec3(12,0,15), vec3(6,3,10), t_i);
-        vec3 next = interpolate(vec3(0,0,5), vec3(12,0,15), vec3(6,3,10), t_i+EPSILON);
+    //     spaceship_position = interpolate(vec3(0,0,5), vec3(12,0,15), vec3(6,3,10), t_i);
+    //     vec3 next = interpolate(vec3(0,0,5), vec3(12,0,15), vec3(6,3,10), t_i+EPSILON);
 
-        spaceship_rotation = findRotation(next-spaceship_position, true);
+    //     spaceship_rotation = findRotation(next-spaceship_position, true);
 
-    }
+    // }
     Surface SPACESHIP_BOUNDING_SPHERE = Surface( sphereDist(p, spaceship_position, 10*spaceship_scale), vec3(0,0,1),1,1,1 );
     if(SCENE_MODE >= PROTAGONIST_ARRIVE_SCENE*0){
         if(SPACESHIP_BOUNDING_SPHERE.d <= EPSILON){
@@ -1364,14 +1445,29 @@ vec3 spaceTexture(vec3 rd){
     vec3 bg = mix(vec3(0.09,0.01,0.09), vec3(0.01,0.01,0.09), rd.y*0.5+0.5) * 0.5;
     return bg + sunColor * ( pow(s,800)   * 2.0 + pow(s, 20.0) * 0.15);
 }
+
+// void animation(){
+//     updateSpaceship(iTime);
+
+
+// }
+
 void main()
 {
     vec2 p = (gl_FragCoord.xy-0.5*iResolution)/iResolution.y;
+
+
+// SP_KEYFRAMES[0] = Keyframe( vec3(0,0,0), vec3(0,0,0), spaceship_scale, vec3(0,0,0), vec3(5,5,5), 2.0, EASE_IN, false);
+// SP_KEYFRAMES[1] = Keyframe( vec3(0,0,10), vec3(0,0,0), spaceship_scale, vec3(0,0,0), vec3(-2.5,-2,10), 6.0, EASE_INOUT, false);
+// SP_KEYFRAMES[2] = Keyframe( vec3(-5,0,10), vec3(0,0,0), spaceship_scale, vec3(0,0,0), vec3(0,2,5), 9.0, EASE_OUT, false);
+// SP_KEYFRAMES[3] = Keyframe( vec3(-5,0,0), vec3(0,0,0), spaceship_scale, vec3(0,0,0), vec3(2.5,5,2), 12.0, LINEAR, false);
+// SP_KEYFRAMES[4] = Keyframe( vec3(0,2,4), vec3(0,0,0), spaceship_scale, vec3(0,0,0), vec3(0,5,0), 15.0, EASE_OUT, false);
 
     vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0+0*iTime*3);
     vec3 Target = vec3 (0.0,1,10); // CAM TARGET
     Target = vec3(0,0,6+3*iTime*0);
 
+    // animation();
 
     vec3 rd = normalize(vec3(p,1.2));
     //vec3 col = mix(vec3 (.01,0.1,0.1),COLOR_BACKGROUND,-p.y*0.2);
