@@ -323,14 +323,13 @@ int main()
     // SPACESHIP UNIFORMS
     // --------------------------------------------------------
 
-    GLint spaceshipPositionLoc =
-        glGetUniformLocation(Imageprogram.ID, "spaceship_position");
+    GLint spaceshipPositionLoc = glGetUniformLocation(Imageprogram.ID, "spaceship_position");
+    GLint spaceshipRotationLoc = glGetUniformLocation(Imageprogram.ID, "spaceship_rotation");
+    GLint spaceshipScaleLoc = glGetUniformLocation(Imageprogram.ID, "spaceship_scale");
 
-    GLint spaceshipRotationLoc =
-        glGetUniformLocation(Imageprogram.ID, "spaceship_rotation");
-
-    GLint spaceshipScaleLoc =
-        glGetUniformLocation(Imageprogram.ID, "spaceship_scale");
+    GLint enemyPositionLoc = glGetUniformLocation(Imageprogram.ID, "enemy_position");
+    GLint enemyRotationLoc = glGetUniformLocation(Imageprogram.ID, "enemy_rotation");
+    GLint enemyScaleLoc = glGetUniformLocation(Imageprogram.ID, "enemy_scale");
 
 
 
@@ -494,24 +493,16 @@ int main()
             );
 
             Transform spaceship = updateSpaceship(currentTime);
+            Transform enemy = updateEnemy( fmod(currentTime, 5.0f));
 
-            glUniform3fv(
-                spaceshipPositionLoc,
-                1,
-                glm::value_ptr(spaceship.position)
-            );
+            glUniform3fv( spaceshipPositionLoc, 1,glm::value_ptr(spaceship.position) );
+            glUniformMatrix4fv( spaceshipRotationLoc,1,GL_FALSE,glm::value_ptr(spaceship.rotation) );
+            glUniform1f( spaceshipScaleLoc, spaceship.scale);
 
-            glUniformMatrix4fv(
-                spaceshipRotationLoc,
-                1,
-                GL_FALSE,
-                glm::value_ptr(spaceship.rotation)
-            );
+            glUniform3fv( enemyPositionLoc, 1,glm::value_ptr(enemy.position) );
+            glUniformMatrix4fv( enemyRotationLoc,1,GL_FALSE,glm::value_ptr(enemy.rotation) );
+            glUniform1f( enemyScaleLoc, enemy.scale);
 
-            glUniform1f(
-                spaceshipScaleLoc,
-                spaceship.scale
-            );
 
 
             glDrawElements(

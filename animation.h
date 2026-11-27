@@ -28,3 +28,4 @@ struct Transform {
 };
 
 Transform updateSpaceship(float currentTime);
+Transform updateEnemy(float currentTime);

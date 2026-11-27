@@ -20,7 +20,13 @@ uniform vec3 spaceship_position;
 uniform mat4 spaceship_rotation;
 uniform float spaceship_scale;
 
+uniform vec3 enemy_position;
+uniform mat4 enemy_rotation;
+uniform float enemy_scale;
 
+//  vec3 enemy_position = vec3(-4,0,5);
+//     mat4 enemy_rotation = rotY(0);
+//     float enemy_scale = 0.4;
 #define MAX_KEYFRAMES 50
 
 #define DEBUGMODE true
@@ -109,9 +115,9 @@ mat4 rotZ (in float angle)
     mat4 scopeRotation = rotY(0);
 
 // ENEMY PROPS:
-    vec3 enemy_position = vec3(-4,0,5);
-    mat4 enemyRotation = rotY(0);
-    float enemyScale = 0.4;
+    // vec3 enemy_position = vec3(-4,0,5);
+    // mat4 enemy_rotation = rotY(0);
+    // float enemy_scale = 0.4;
 
 // Tarefa
 
@@ -1082,7 +1088,7 @@ Surface getDist(vec3 p)
     Surface d = Surface(MAX_DIST+1, vec3(0,0,0), 0,0,0);
     
     
-    if(SCENE_MODE >= AMBIENT_SCENE && false){
+    if(SCENE_MODE >= AMBIENT_SCENE){
         //AMBIENT
         vec3 ringColors[5] = vec3[](
             vec3(0.32, 0.52, 0.72), // Ocean blue
@@ -1092,7 +1098,7 @@ Surface getDist(vec3 p)
             vec3(0.85, 0.75, 0.95)  // Pale gold
         );
 
-        vec3 planetPosition = vec3(-30*cos(iTime*1),-20,80);
+        vec3 planetPosition = vec3(-30,-20,80);
         float planetScale = 8;
         vec3 planetLocal = normalize(p - planetPosition);
         vec3 rotatedToPlanet = opTransf(planetLocal,rotY(3.0*iTime) * rotZ(-15.0));
@@ -1120,8 +1126,8 @@ Surface getDist(vec3 p)
 
         Surface planet = Surface(sphereDist(p, planetPosition, 2*planetScale),planetTexture(toPlanetUV(rotatedToPlanet)), 0.15, 0.7, 0.15);
 
-        Surface outerRing = Surface(cylinderVerticalDist(pl, vec2(6,0.01)*planetScale), ringColor, 0.15, 0.8, 0.05);
-        Surface innerRing = Surface(cylinderVerticalDist(pl, vec2(4,0.3)*planetScale),  ringColor, 0.15, 0.8, 0.05);
+        Surface outerRing = Surface(cylinderVerticalDist(pl,vec2(6,0.01)*planetScale),ringColor,0.15,0.7, 0.15);
+        Surface innerRing = Surface(cylinderVerticalDist(pl,vec2(4,0.3)*planetScale),ringColor, 0.15,0.7, 0.15);
         Surface rings = subtractionS(outerRing, innerRing);
 
         mat4 asteroid_rotation = rotY(iTime*30);
@@ -1158,7 +1164,7 @@ Surface getDist(vec3 p)
 
             Surface spaceship = Spaceship(p, spaceship_position, spaceship_rotation , scopeRotation, spaceship_scale);
             d = unionS(d, spaceship);
-            return d;
+          //  return d;
         }else{
             d = unionS(d, SPACESHIP_BOUNDING_SPHERE);
         }
@@ -1166,22 +1172,22 @@ Surface getDist(vec3 p)
 
 
 
-    Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemyScale ), vec3(0,0,1), 1,1,1);
+    Surface ENEMY_BOUND_SPHERE = Surface(sphereDist(p,enemy_position, 5*enemy_scale ), vec3(0,0,1), 1,1,1);
 
     if(SCENE_MODE >= ENEMY_APPEAR_SCENE){
         if( ENEMY_BOUND_SPHERE.d  <= (EPSILON)){
-            Surface enemy = Enemy(p, enemy_position, enemyRotation, enemyScale);
+            Surface enemy = Enemy(p, enemy_position, enemy_rotation, enemy_scale);
 
-            vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemyScale;
-            vec3 rightMissileOffset = vec3( 0.6, -0.8, -3.5)*enemyScale;
+            vec3 leftMissileOffset  = vec3(-0.6, -0.8, -3.5)*enemy_scale;
+            vec3 rightMissileOffset = vec3( 0.6, -0.8, -3.5)*enemy_scale;
 
             // World positions relative to enemy
-            vec3 leftMissilePosition = enemy_position + opTransf(leftMissileOffset, enemyRotation);
-            vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemyRotation);
+            vec3 leftMissilePosition = enemy_position + opTransf(leftMissileOffset, enemy_rotation);
+            vec3 rightMissilePosition = enemy_position + opTransf(rightMissileOffset, enemy_rotation);
 
             // Attached missiles
-            Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
-            Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemyScale, enemyRotation);
+            Surface missile1 = Missile(p, leftMissilePosition, 0.2, 0.6*enemy_scale, enemy_rotation);
+            Surface missile2 = Missile(p, rightMissilePosition, 0.2, 0.6*enemy_scale, enemy_rotation);
 
             d = unionS(d, enemy);
             d = unionS(d, missile1);
@@ -1310,7 +1316,7 @@ void main()
 {
     vec2 p = (gl_FragCoord.xy-0.5*iResolution)/iResolution.y;
 
-    vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0+0*iTime*3);
+    vec3 CAMERA= vec3 (3.6*0,3.5-0.5,-5.0);
     vec3 Target = vec3 (0.0,1,10); // CAM TARGET
     Target = vec3(0,0,6+3*iTime*0);
 

@@ -10,71 +10,6 @@
 
 #define EPSILON 0.0001f
 
-// ============================================================
-// SPACESHIP KEYFRAMES
-// ============================================================
-
-static const float SPACESHIP_BASE_SCALE = 0.3f;
-
-static const std::vector<Keyframe> SP_KEYFRAMES = {
-
-    // Position, Rotation, Scale, Forward, Control, Time, Easing, Linear
-
-    {  glm::vec3(0, 0, 0),
-        glm::vec3(0, 0, 0),
-        SPACESHIP_BASE_SCALE,
-        glm::vec3(0),
-        glm::vec3(5, 5, 5),
-        2.0f,
-        EASE_IN,
-        false
-    },
-
-    {
-        glm::vec3(0, 0, 10),
-        glm::vec3(0, 0, 0),
-        SPACESHIP_BASE_SCALE,
-        glm::vec3(0),
-        glm::vec3(-2.5f, -2, 10),
-        6.0f,
-        LINEAR,
-        false
-    },
-
-    {
-        glm::vec3(-5, 0, 10),
-        glm::vec3(0, 0, 0),
-        SPACESHIP_BASE_SCALE,
-        glm::vec3(0),
-        glm::vec3(0, 2, 5),
-        9.0f,
-        LINEAR,
-        false
-    },
-
-    {
-        glm::vec3(-5, 0, 0),
-        glm::vec3(0, 0, 0),
-        SPACESHIP_BASE_SCALE,
-        glm::vec3(0),
-        glm::vec3(2.5f, 5, 2),
-        12.0f,
-        LINEAR,
-        false
-    },
-
-    {
-        glm::vec3(0, 2, 4),
-        glm::vec3(0, 0, 0),
-        SPACESHIP_BASE_SCALE,
-        glm::vec3(-2.5,-3,2),
-        glm::vec3(0, 5, 0),
-        15.0f,
-        EASE_OUT,
-        false
-    }
-};
-
 
 // ============================================================
 // EASING
@@ -384,6 +319,129 @@ static Transform keyFrameHandler(
 
 
 // ============================================================
+// SPACESHIP KEYFRAMES
+// ============================================================
+
+static const float SPACESHIP_BASE_SCALE = 0.3f;
+
+static const std::vector<Keyframe> SP_KEYFRAMES = {
+
+    // Position, Rotation, Scale, Forward, Control, Time, Easing, Linear
+
+    {  glm::vec3(0, 0, 0),
+        glm::vec3(0, 0, 0),
+        SPACESHIP_BASE_SCALE,
+        glm::vec3(0),
+        glm::vec3(5, 5, 5),
+        2.0f,
+        EASE_IN,
+        false
+    },
+
+    {
+        glm::vec3(0, 0, 10),
+        glm::vec3(0, 0, 5),
+        SPACESHIP_BASE_SCALE,
+        glm::vec3(0),
+        glm::vec3(-2.5f, -2, 10),
+        6.0f,
+        LINEAR,
+        false
+    },
+
+    {
+        glm::vec3(-5, 0, 10),
+        glm::vec3(0, 0, -5),
+        SPACESHIP_BASE_SCALE,
+        glm::vec3(0),
+        glm::vec3(0, 2, 5),
+        9.0f,
+        LINEAR,
+        false
+    },
+
+    {
+        glm::vec3(-5, 0, 0),
+        glm::vec3(0, 0, 5),
+        SPACESHIP_BASE_SCALE,
+        glm::vec3(0),
+        glm::vec3(2.5f, 5, 2),
+        12.0f,
+        LINEAR,
+        false
+    },
+
+    {
+        glm::vec3(0, 2, 4),
+        glm::vec3(0, 0, -5),
+        SPACESHIP_BASE_SCALE,
+        glm::vec3(-2.5,-3,2),
+        glm::vec3(0, 5, 0),
+        15.0f,
+        EASE_OUT,
+        false
+    }
+};
+
+
+// ============================================================
+// ENEMY KEYFRAMES
+// ============================================================
+
+static const float ENEMY_BASE_SCALE = 0.4f;
+
+static const std::vector<Keyframe> ENEMY_KEYFRAMES = {
+    {
+        glm::vec3(-4, 0, 5),
+        glm::vec3(0,0,0),
+        ENEMY_BASE_SCALE,
+        glm::vec3(0,0,0),
+        glm::vec3(0,0,7),
+        0,
+        LINEAR,
+        false,
+    },{
+        glm::vec3(4, 0, 5),
+        glm::vec3(0,0,0),
+        ENEMY_BASE_SCALE,
+        glm::vec3(1,0,0),
+        glm::vec3(5,0,0),
+        1.25,
+        LINEAR,
+        false,
+    },{
+        glm::vec3(4, 0, -5),
+        glm::vec3(0,0,0),
+        ENEMY_BASE_SCALE,
+        glm::vec3(0,0,0),
+        glm::vec3(0,0,-6),
+        2.5,
+        LINEAR,
+        false,
+    },{
+        glm::vec3(-4, 0, -5),
+        glm::vec3(0,0,0),
+        ENEMY_BASE_SCALE,
+        glm::vec3(1,0,0),
+        glm::vec3(-5,0,0),
+        3.75,
+        LINEAR,
+        false
+    },{
+        glm::vec3(-4, 0, 5),
+        glm::vec3(0,0,0),
+        ENEMY_BASE_SCALE,
+        glm::vec3(1,0,0),
+        glm::vec3(0,0,0),
+        5,
+        LINEAR,
+        false,
+    }
+
+};
+
+
+// ============================================================
 // PUBLIC ANIMATION INTERFACE
 // ============================================================
 
@@ -391,6 +449,14 @@ Transform updateSpaceship(float currentTime)
 {
     return keyFrameHandler(
         SP_KEYFRAMES,
+        currentTime,
+        true
+    );
+}
+Transform updateEnemy(float currentTime)
+{
+    return keyFrameHandler(
+        ENEMY_KEYFRAMES,
         currentTime,
         true
     );
